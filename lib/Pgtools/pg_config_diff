@@ -1,0 +1,241 @@
+#!/usr/bin/env perl
+package Pgtools::pg_config_diff;
+
+use 5.006;
+use strict;
+use warnings;
+use DBI;
+use Data::Dumper;
+use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
+use DateTime;
+use DateTime::Format::Strptime;
+use Perl6::Slurp;
+use JSON::XS;
+use List::MoreUtils qw(uniq);
+
+our $VERSION = '0.01';
+
+my $opt = {
+    "help" => 0,
+    0 => {
+        "database" => "",
+        "host"     => "",
+        "password" => "",
+        "port"     => "",
+        "user"     => "",
+        "config"   => "",
+        "file"     => ""
+    },
+    1 => {
+        "database" => "",
+        "host"     => "",
+        "password" => "",
+        "port"     => "",
+        "user"     => "",
+        "config"   => "",
+        "file"     => ""
+    }
+};
+my $conf = {};
+
+$| = 1; # auto-flush STDOUT
+
+GetOptions(
+    'help=s'              => \$opt->{help},
+    'database1|db1=s'     => \$opt->{0}->{database},
+    'host1|h1=s'          => \$opt->{0}->{host},
+    'password1|p1=s'      => \$opt->{0}->{password},
+    'port1=i'             => \$opt->{0}->{port},
+    'user1|u1=s'          => \$opt->{0}->{user},
+
+    'database2|db2=s'     => \$opt->{1}->{database},
+    'host2|h2=s'          => \$opt->{1}->{host},
+    'password2|p2=s'      => \$opt->{1}->{password},
+    'port2=i'             => \$opt->{1}->{port},
+    'user2|u2=s'          => \$opt->{1}->{user}
+);
+
+# show help 
+if($opt->{help}){
+    &print_help;
+    exit;
+}
+
+for(my $i=0; $i<2; $i++){
+    if($opt->{$i}->{host} ne '' and $opt->{$i}->{database} ne '') {
+    } else {
+        die "configration 1 is not properly set!\n";
+    }
+
+    my $dbh = DBI->connect("dbi:Pg:dbname=$opt->{$i}->{database};host=$opt->{$i}->{host};port=$opt->{$i}->{port}","$opt->{$i}->{user}","$opt->{$i}->{password}") or die "$!\n Error: failed to connect to DB.\n";
+
+    my $sth = $dbh->prepare("
+        SELECT
+            name,
+            setting
+        FROM 
+            pg_settings
+    ");
+    $sth->execute();
+
+    while (my $ary_ref = $sth->fetchrow_arrayref) {
+        $conf->{$i}->{@$ary_ref[0]} = @$ary_ref[1];
+    }
+
+    $sth->finish;
+    $dbh->disconnect;
+}
+ 
+&compare_conf($conf);
+
+sub compare_conf {
+    my @keys =  (keys %{$conf->{0}}, keys %{$conf->{1}});
+    @keys = uniq(@keys);
+    @keys = sort(@keys);
+    
+    print sprintf("%-35s | %-35s | %-35s\n", "columm name", "host 1", "host 2");
+    print sprintf("--------------------------------------------------------------------------------------------\n");
+    for my $key (@keys) {
+        if(!defined $conf->{0}->{$key}){
+            $conf->{0}->{$key} = "";
+        }
+        if(!defined $conf->{1}->{$key}){
+            $conf->{1}->{$key} = "";
+        }
+        if($conf->{0}->{$key} ne $conf->{1}->{$key}) {
+            print sprintf("%-35s | %-35s | %-35s\n", $key, $conf->{0}->{$key}, $conf->{1}->{$key});
+        }
+    }
+}
+
+sub print_help {
+    print <<OUT;
+    $0 [-hv] [-c] [-u user] [-p password]
+
+    Kill queries which are matched specified (regular) expression.
+
+  Options:
+    -b busy_time:      
+    -c conf:           set options with configution file.
+    -db database:      set the database name
+    -h host:           host (localhost)
+    -mc match_command: query match
+    -ms match_state:  state match
+    -p passward:       set password
+    -pr print:         
+    -u user:           user name 
+    -v version:        version
+OUT
+}
+
+
+__END__
+
+
+
+=head1 NAME
+
+Pgtools::pg_config_diff - compare postgresql servers setting. 
+
+=head1 VERSION
+
+Version 0.01
+
+
+=head1 SYNOPSIS
+
+Compare postgresql settings or files.
+
+Perhaps a little code snippet.
+
+    ...
+    ...
+
+=head1 AUTHOR
+
+Tomoaki Otsuka, C<< <otsuka.tt at gmail.com> >>
+
+=head1 BUGS
+
+Please report any bugs or feature requests to C<bug-./ at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=./>.  I will be notified, and then you'll
+automatically be notified of progress on your bug as I make changes.
+
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc Pgtools::pg_config_diff
+
+
+You can also look for information at:
+
+=over 4
+
+=item * RT: CPAN's request tracker (report bugs here)
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=./>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/./>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/./>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/.//>
+
+=back
+
+
+=head1 ACKNOWLEDGEMENTS
+
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2015 Tomoaki Otsuka.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the the Artistic License (2.0). You may obtain a
+copy of the full license at:
+
+L<http://www.perlfoundation.org/artistic_license_2_0>
+
+Any use, modification, and distribution of the Standard or Modified
+Versions is governed by this Artistic License. By using, modifying or
+distributing the Package, you accept this license. Do not use, modify,
+or distribute the Package, if you do not accept this license.
+
+If your Modified Version has been derived from a Modified Version made
+by someone other than you, you are nevertheless required to ensure that
+your Modified Version complies with the requirements of this license.
+
+This license does not grant you the right to use any trademark, service
+mark, tradename, or logo of the Copyright Holder.
+
+This license includes the non-exclusive, worldwide, free-of-charge
+patent license to make, have made, use, offer to sell, sell, import and
+otherwise transfer the Package with respect to any patent claims
+licensable by the Copyright Holder that are necessarily infringed by the
+Package. If you institute patent litigation (including a cross-claim or
+counterclaim) against any party alleging that the Package constitutes
+direct or contributory patent infringement, then this Artistic License
+to you shall terminate on the date that such litigation is filed.
+
+Disclaimer of Warranty: THE PACKAGE IS PROVIDED BY THE COPYRIGHT HOLDER
+AND CONTRIBUTORS "AS IS' AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES.
+THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, OR NON-INFRINGEMENT ARE DISCLAIMED TO THE EXTENT PERMITTED BY
+YOUR LOCAL LAW. UNLESS REQUIRED BY LAW, NO COPYRIGHT HOLDER OR
+CONTRIBUTOR WILL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR
+CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE USE OF THE PACKAGE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+=cut
+
+1; # End of Pgtools::pg_config_diff

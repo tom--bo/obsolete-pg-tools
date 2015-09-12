@@ -1,0 +1,317 @@
+#!/usr/bin/env perl
+package Pgtools::pg_kill;
+
+use 5.006;
+use strict;
+use warnings;
+use DBI;
+use Data::Dumper;
+use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
+use DateTime;
+use DateTime::Format::Strptime;
+use Perl6::Slurp;
+use JSON::XS;
+
+our $VERSION = '0.0.1';
+
+my $opt = {
+    "setting" =>  {
+        "database"             => '',
+        "host"                 => 'localhost',
+        "password"             => '',
+        "port"                 => '5432',
+        "user"                 => '',
+    }, 
+    "options" => {
+        "busy_time"            => 0,
+        "conf"                 => '',
+        "datname"              => '',
+        "help"                 => 0,
+        "kill"                 => '',
+        "match_query"          => '',
+        "match_state"          => '',
+        "print"                => 0,
+        "usename"              => '',
+        "version"              => $VERSION,
+        "ignore_match_query"   => '',
+        "ignore_match_state"   => '',
+        "ignore_usename"       => ''
+    }
+};
+
+my ($now, $qt);
+my $start_time = DateTime->now( time_zone => 'Asia/Tokyo' );
+my $qt_format = DateTime::Format::Strptime->new(
+    pattern => '%Y-%m-%d %H:%M:%S.%N'
+);
+
+$| = 1; # auto-flush STDOUT
+
+GetOptions(
+    'database|db=s'              => \$opt->{setting}->{database},
+    'host|h=s'                   => \$opt->{setting}->{host},
+    'password|p=s'               => \$opt->{setting}->{password},
+    'port=i'                     => \$opt->{setting}->{port},
+    'user|u=s'                   => \$opt->{setting}->{user},
+    'busy_time|b=i'              => \$opt->{options}->{busy_time},
+    'conf|c=s'                   => \$opt->{options}->{conf},
+    'help'                       => \$opt->{options}->{help},
+    'kill'                       => \$opt->{options}->{kill},
+    'match_query|mq=s'           => \$opt->{options}->{match_query},
+    'match_state|ms=s'           => \$opt->{options}->{match_state},
+    'print|pr'                   => \$opt->{options}->{print},
+    'usename|un=s'               => \$opt->{options}->{usename},
+    'version|v'                  => \$opt->{options}->{version},
+    "ignore_match_query|imq=s"   => \$opt->{options}->{ignore_match_query},
+    "ignore_match_state|ims=s"   => \$opt->{options}->{ignore_match_state},
+    "ignore_usename|iun=s"       => \$opt->{options}->{ignore_usename},
+);
+
+# show help 
+if($opt->{options}->{help}){
+    &print_help;
+    exit;
+}
+
+# use config file which is prior to query line options
+if($opt->{options}->{conf} ne '') {
+    my $conf_json = slurp $opt->{options}->{conf};
+    my $data = decode_json($conf_json);
+    while (my ($key, $val) = each (%$data) ) {
+        while (my ($k, $v) = each (%$val) ) {
+            $opt->{$key}->{$k} = $v;
+        }
+    }
+}
+
+my $dbh = DBI->connect(
+    "dbi:Pg:dbname=$opt->{setting}->{database};host=$opt->{setting}->{host};port=$opt->{setting}->{port}",
+    "$opt->{setting}->{user}",
+    "$opt->{setting}->{password}"
+) or die "$!\n Error: failed to connect to DB.\n";
+
+my $sth = $dbh->prepare("
+    SELECT
+        datname,
+        pid,
+        usename,
+        application_name,
+        client_addr,
+        client_hostname,
+        client_port,
+        backend_start,
+        xact_start,
+        query_start,
+        state_change,
+        waiting,
+        state,
+        query
+    FROM 
+        pg_stat_activity
+    WHERE 
+        pid <> pg_backend_pid()
+");
+$sth->execute();
+
+my @pids = &search_queries($sth, $opt);
+
+if($opt->{options}->{kill}){
+    &kill_queries($sth, $opt);
+}
+
+$sth->finish;
+$dbh->disconnect;
+
+
+sub kill_queries {
+    my $sth = shift @_;
+    my $opt = shift @_;
+
+    foreach my $val (@pids) {
+        $sth = $dbh->prepare("SELECT pg_terminate_backend(".$val.");");
+        $now = DateTime->now( time_zone => 'local' );
+        print "killed-pid: " . $val . ", at " .  $now->strftime('%Y/%m/%d %H:%M:%S') . "\n" if $opt->{options}->{print};
+        $sth->execute();
+    }
+}
+
+sub search_queries {
+    my $sth = shift @_;
+    my $opt = shift @_;
+
+    while (my $ary_ref = $sth->fetchrow_arrayref) {
+        if($opt->{setting}->{database} ne @$ary_ref[0]) {
+            next;
+        }
+        if($opt->{options}->{usename} ne '' and @$ary_ref[2] ne $opt->{options}->{usename}) { 
+            next;
+        }
+        if($opt->{options}->{match_state} ne '' and @$ary_ref[12] ne $opt->{options}->{match_state}) { 
+            next;
+        }
+        if($opt->{options}->{match_query} ne '' and @$ary_ref[13] !~ /$opt->{options}->{match_query}/im ) {
+            next;
+        }
+        if($opt->{options}->{ignore_usename} ne '' and @$ary_ref[2] eq $opt->{options}->{ignore_usename}) { 
+            next;
+        }
+        if($opt->{options}->{ignore_match_state} ne '' and @$ary_ref[12] eq $opt->{options}->{ignore_match_state}) { 
+            next;
+        }
+        if($opt->{options}->{ignore_match_query} ne '' and @$ary_ref[13] =~ /$opt->{options}->{ignore_match_query}/im ) {
+            next;
+        }
+
+        if($opt->{options}->{busy_time} != 0) {
+            $qt = $qt_format->parse_datetime(@$ary_ref[7]);
+            $qt->set_time_zone('Asia/Tokyo');
+            my $diff = $start_time->epoch() - $qt->epoch();
+            if($diff < $opt->{options}->{busy_time}) {
+                next;
+            }
+        }
+        if($opt->{options}->{print} and !$opt->{options}->{kill}) {
+            &print_query($ary_ref);
+        }
+        push(@pids, $ary_ref->[1]);
+    }
+    return @pids;
+}
+
+sub print_query {
+    my $ary_ref = shift @_;
+    print "-------------------------------\n";
+    print "pid: @$ary_ref[1]"."\n";
+    print "start_time: @$ary_ref[7]"."\n";
+    print "state: @$ary_ref[12]"."\n";
+    print "query: @$ary_ref[13]"."\n";
+}
+
+sub print_help {
+    print <<OUT;
+    $0 [-hv] [-c] [-u user] [-p password]
+
+    Kill queries which are matched specified (regular) expression.
+
+  Options:
+    -b   busy_time:      
+    -c   conf:           set options with configution file.
+    -db  database:      set the database name
+    -h   host:           host (localhost)
+    -ignore_match_query: except matching query
+    -ignore_match_state: except matching state
+    -mq  match_query:   query match
+    -ms  match_state:   state match
+    -p   passward:       set password
+    -pr  print:         
+    -u   user:           user name 
+    -v   version:        version
+OUT
+}
+
+
+__END__
+
+
+
+=head1 NAME
+
+Pgtools::pg_kill - kill the postgresql processes with option 
+
+=head1 SYNOPSIS
+
+Kill postgresql processes with options.
+
+Perhaps a little code snippet.
+
+    ...
+    ...
+
+=head1 AUTHOR
+
+Tomoaki Otsuka, C<< <otsuka.tt at gmail.com> >>
+
+=head1 BUGS
+
+Please report any bugs or feature requests to C<bug-./ at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=./>.  I will be notified, and then you'll
+automatically be notified of progress on your bug as I make changes.
+
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc Pgtools::pg_kill
+
+
+You can also look for information at:
+
+=over 4
+
+=item * RT: CPAN's request tracker (report bugs here)
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=./>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/./>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/./>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/.//>
+
+=back
+
+
+=head1 ACKNOWLEDGEMENTS
+
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2015 Tomoaki Otsuka.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the the Artistic License (2.0). You may obtain a
+copy of the full license at:
+
+L<http://www.perlfoundation.org/artistic_license_2_0>
+
+Any use, modification, and distribution of the Standard or Modified
+Versions is governed by this Artistic License. By using, modifying or
+distributing the Package, you accept this license. Do not use, modify,
+or distribute the Package, if you do not accept this license.
+
+If your Modified Version has been derived from a Modified Version made
+by someone other than you, you are nevertheless required to ensure that
+your Modified Version complies with the requirements of this license.
+
+This license does not grant you the right to use any trademark, service
+mark, tradename, or logo of the Copyright Holder.
+
+This license includes the non-exclusive, worldwide, free-of-charge
+patent license to make, have made, use, offer to sell, sell, import and
+otherwise transfer the Package with respect to any patent claims
+licensable by the Copyright Holder that are necessarily infringed by the
+Package. If you institute patent litigation (including a cross-claim or
+counterclaim) against any party alleging that the Package constitutes
+direct or contributory patent infringement, then this Artistic License
+to you shall terminate on the date that such litigation is filed.
+
+Disclaimer of Warranty: THE PACKAGE IS PROVIDED BY THE COPYRIGHT HOLDER
+AND CONTRIBUTORS "AS IS' AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES.
+THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, OR NON-INFRINGEMENT ARE DISCLAIMED TO THE EXTENT PERMITTED BY
+YOUR LOCAL LAW. UNLESS REQUIRED BY LAW, NO COPYRIGHT HOLDER OR
+CONTRIBUTOR WILL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR
+CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE USE OF THE PACKAGE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+=cut
+
+1; # End of Pgtools::pg_kill
