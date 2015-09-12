@@ -1,0 +1,9 @@
+Build.PL
+Changes
+lib/Pgtools/pg_config_diff.pm
+lib/Pgtools/pg_kill.pm
+MANIFEST			This list of files
+README
+README.md
+t/t
+t/xt
