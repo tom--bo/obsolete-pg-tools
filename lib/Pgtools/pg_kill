@@ -31,11 +31,11 @@ my $opt = {
         "match_query"          => '',
         "match_state"          => '',
         "print"                => 0,
-        "usename"              => '',
+        "query_user_name"              => '',
         "version"              => $VERSION,
         "ignore_match_query"   => '',
         "ignore_match_state"   => '',
-        "ignore_usename"       => ''
+        "ignore_query_user_name"       => ''
     }
 };
 
@@ -60,11 +60,11 @@ GetOptions(
     'match_query|mq=s'           => \$opt->{options}->{match_query},
     'match_state|ms=s'           => \$opt->{options}->{match_state},
     'print|pr'                   => \$opt->{options}->{print},
-    'usename|un=s'               => \$opt->{options}->{usename},
+    'query_user_name|un=s'               => \$opt->{options}->{query_user_name},
     'version|v'                  => \$opt->{options}->{version},
     "ignore_match_query|imq=s"   => \$opt->{options}->{ignore_match_query},
     "ignore_match_state|ims=s"   => \$opt->{options}->{ignore_match_state},
-    "ignore_usename|iun=s"       => \$opt->{options}->{ignore_usename},
+    "ignore_query_user_name|iun=s"       => \$opt->{options}->{ignore_query_user_name},
 );
 
 # show help 
@@ -94,7 +94,7 @@ my $sth = $dbh->prepare("
     SELECT
         datname,
         pid,
-        usename,
+        query_user_name,
         application_name,
         client_addr,
         client_hostname,
@@ -143,7 +143,7 @@ sub search_queries {
         if($opt->{setting}->{database} ne @$ary_ref[0]) {
             next;
         }
-        if($opt->{options}->{usename} ne '' and @$ary_ref[2] ne $opt->{options}->{usename}) { 
+        if($opt->{options}->{query_user_name} ne '' and @$ary_ref[2] ne $opt->{options}->{query_user_name}) { 
             next;
         }
         if($opt->{options}->{match_state} ne '' and @$ary_ref[12] ne $opt->{options}->{match_state}) { 
@@ -152,7 +152,7 @@ sub search_queries {
         if($opt->{options}->{match_query} ne '' and @$ary_ref[13] !~ /$opt->{options}->{match_query}/im ) {
             next;
         }
-        if($opt->{options}->{ignore_usename} ne '' and @$ary_ref[2] eq $opt->{options}->{ignore_usename}) { 
+        if($opt->{options}->{ignore_query_user_name} ne '' and @$ary_ref[2] eq $opt->{options}->{ignore_query_user_name}) { 
             next;
         }
         if($opt->{options}->{ignore_match_state} ne '' and @$ary_ref[12] eq $opt->{options}->{ignore_match_state}) { 

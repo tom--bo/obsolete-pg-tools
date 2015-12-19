@@ -41,7 +41,7 @@ my $conf = {};
 $| = 1; # auto-flush STDOUT
 
 GetOptions(
-    'help=s'              => \$opt->{help},
+    'help'              => \$opt->{help},
     'database1|db1=s'     => \$opt->{0}->{database},
     'host1|h1=s'          => \$opt->{0}->{host},
     'password1|p1=s'      => \$opt->{0}->{password},
