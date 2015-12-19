@@ -120,21 +120,25 @@ sub compare_conf {
 
 sub print_help {
     print <<OUT;
-    $0 [-hv] [-c] [-u user] [-p password]
+    $0 [-hv] arg1 arg2
 
-    Kill queries which are matched specified (regular) expression.
+    Show different settings between 2 PostgreSQL databases.
 
   Options:
-    -b busy_time:      
-    -c conf:           set options with configution file.
-    -db database:      set the database name
-    -h host:           host (localhost)
-    -mc match_command: query match
-    -ms match_state:  state match
-    -p passward:       set password
-    -pr print:         
-    -u user:           user name 
-    -v version:        version
+    -help:  show this help.
+
+  Args:
+    This command need 2 argument which is string to specify the databases.
+    1 argument should contain hostname, port, username, password, and database.
+    These should be separated by  colon(:). 
+    You can omit these pieces except hostname, and then you should insert no character between colons.
+    Default setting is applied when you omit argument pieces. 
+    Default setting is ...
+      Hostname: localhost 
+      Port    : 5432
+      Username: postgres
+      Password: '' (null)
+      Database: postgres
 OUT
 }
 
@@ -154,7 +158,7 @@ Version 0.01
 
 =head1 SYNOPSIS
 
-Compare postgresql settings or files.
+Compare postgresql settings.
 
 Perhaps a little code snippet.
 

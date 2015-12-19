@@ -24,7 +24,6 @@ my $opt = {
     }, 
     "options" => {
         "busy_time"            => 0,
-        "conf"                 => '',
         "datname"              => '',
         "help"                 => 0,
         "kill"                 => '',
@@ -54,7 +53,6 @@ GetOptions(
     'port=i'                     => \$opt->{setting}->{port},
     'user|u=s'                   => \$opt->{setting}->{user},
     'busy_time|b=i'              => \$opt->{options}->{busy_time},
-    'conf|c=s'                   => \$opt->{options}->{conf},
     'help'                       => \$opt->{options}->{help},
     'kill'                       => \$opt->{options}->{kill},
     'match_query|mq=s'           => \$opt->{options}->{match_query},
@@ -71,17 +69,6 @@ GetOptions(
 if($opt->{options}->{help}){
     &print_help;
     exit;
-}
-
-# use config file which is prior to query line options
-if($opt->{options}->{conf} ne '') {
-    my $conf_json = slurp $opt->{options}->{conf};
-    my $data = decode_json($conf_json);
-    while (my ($key, $val) = each (%$data) ) {
-        while (my ($k, $v) = each (%$val) ) {
-            $opt->{$key}->{$k} = $v;
-        }
-    }
 }
 
 my $dbh = DBI->connect(
@@ -189,22 +176,25 @@ sub print_query {
 
 sub print_help {
     print <<OUT;
-    $0 [-hv] [-c] [-u user] [-p password]
+    $0 -help | [-(options below)]
 
-    Kill queries which are matched specified (regular) expression.
+    Kill queries which are matched specified regular expression.
 
   Options:
-    -b   busy_time:      
-    -c   conf:           set options with configution file.
-    -db  database:      set the database name
+    -b   busy_time:      execute time 
+    -db  database:       set the database name
     -h   host:           host (localhost)
+    -help:               show this help
     -ignore_match_query: except matching query
     -ignore_match_state: except matching state
-    -mq  match_query:   query match
-    -ms  match_state:   state match
+    -kill:               kill query which matched condition
+    -mq  match_query:    query match
+    -ms  match_state:    state match
+    -pr  print:          print killed queries info
     -p   passward:       set password
-    -pr  print:         
-    -u   user:           user name 
+    -port:               port number
+    -query_user_name:     user who exec query
+    -u   user:           Postgres user name 
     -v   version:        version
 OUT
 }
