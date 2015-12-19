@@ -101,7 +101,7 @@ sub compare_conf {
     @keys = uniq(@keys);
     @keys = sort(@keys);
 
-    print sprintf("%-35s | %-35s | %-35s\n", "columm name", "host 1", "host 2");
+    print sprintf("%-35s | %-35s | %-35s\n", "columm name", $opt->{0}->{host}, $opt->{1}->{host});
     print sprintf("--------------------------------------------------------------------------------------------\n");
     for my $key (@keys) {
         if(!defined $conf->{0}->{$key}){
