@@ -18,22 +18,18 @@ our $VERSION = '0.01';
 my $opt = {
     "help" => 0,
     0 => {
-        "database" => "",
-        "host"     => "",
+        "host"     => "localhost",
+        "port"     => "5432",
+        "user"     => "postgres",
         "password" => "",
-        "port"     => "",
-        "user"     => "",
-        "config"   => "",
-        "file"     => ""
+        "database" => "postgres",
     },
     1 => {
-        "database" => "",
-        "host"     => "",
+        "host"     => "localhost",
+        "port"     => "5432",
+        "user"     => "postgres",
         "password" => "",
-        "port"     => "",
-        "user"     => "",
-        "config"   => "",
-        "file"     => ""
+        "database" => "postgres",
     }
 };
 my $conf = {};
@@ -42,17 +38,6 @@ $| = 1; # auto-flush STDOUT
 
 GetOptions(
     'help'              => \$opt->{help},
-    'database1|db1=s'     => \$opt->{0}->{database},
-    'host1|h1=s'          => \$opt->{0}->{host},
-    'password1|p1=s'      => \$opt->{0}->{password},
-    'port1=i'             => \$opt->{0}->{port},
-    'user1|u1=s'          => \$opt->{0}->{user},
-
-    'database2|db2=s'     => \$opt->{1}->{database},
-    'host2|h2=s'          => \$opt->{1}->{host},
-    'password2|p2=s'      => \$opt->{1}->{password},
-    'port2=i'             => \$opt->{1}->{port},
-    'user2|u2=s'          => \$opt->{1}->{user}
 );
 
 # show help 
@@ -60,13 +45,17 @@ if($opt->{help}){
     &print_help;
     exit;
 }
+if (@ARGV != 2) {  
+    die "Invalid arguments.\nPlease check pg_config_diff -help\n";
+}
 
-for(my $i=0; $i<2; $i++){
-    if($opt->{$i}->{host} ne '' and $opt->{$i}->{database} ne '') {
-    } else {
-        die "configration 1 is not properly set!\n";
-    }
+my $db1 = shift @ARGV;
+my $db2 = shift @ARGV;
 
+# 引き数を設定
+setArgs($db1, $db2);
+
+for(my $i=0; $i<2; $i++) {
     my $dbh = DBI->connect("dbi:Pg:dbname=$opt->{$i}->{database};host=$opt->{$i}->{host};port=$opt->{$i}->{port}","$opt->{$i}->{user}","$opt->{$i}->{password}") or die "$!\n Error: failed to connect to DB.\n";
 
     my $sth = $dbh->prepare("
@@ -88,11 +77,30 @@ for(my $i=0; $i<2; $i++){
  
 &compare_conf($conf);
 
+sub setArgs {
+    my @t = @_;
+    my $cnt = 0;
+    foreach my $e (@t) {
+        my @tmp = split(/:/, $e, -1);
+        if($#tmp != 4) {
+            die "Invalid arguments.\nPlease check pg_config_diff -help\n";
+        }
+        $opt->{$cnt}->{host} = $tmp[0] if $tmp[0] ne '';
+        $opt->{$cnt}->{port} = $tmp[1] if $tmp[1] ne '';
+        $opt->{$cnt}->{user} = $tmp[2] if $tmp[2] ne '';
+        $opt->{$cnt}->{password} = $tmp[3] if $tmp[3] ne '';
+        $opt->{$cnt}->{database} = $tmp[4] if $tmp[4] ne '';
+        $cnt += 1;
+    }
+
+}
+
 sub compare_conf {
+    my $cnt = 0;
     my @keys =  (keys %{$conf->{0}}, keys %{$conf->{1}});
     @keys = uniq(@keys);
     @keys = sort(@keys);
-    
+
     print sprintf("%-35s | %-35s | %-35s\n", "columm name", "host 1", "host 2");
     print sprintf("--------------------------------------------------------------------------------------------\n");
     for my $key (@keys) {
@@ -103,9 +111,11 @@ sub compare_conf {
             $conf->{1}->{$key} = "";
         }
         if($conf->{0}->{$key} ne $conf->{1}->{$key}) {
+            $cnt += 1;
             print sprintf("%-35s | %-35s | %-35s\n", $key, $conf->{0}->{$key}, $conf->{1}->{$key});
         }
     }
+    print "There is no differenct settings.\n" if $cnt == 0;
 }
 
 sub print_help {
