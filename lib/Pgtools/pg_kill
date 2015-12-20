@@ -23,14 +23,14 @@ my $opt = {
         "user"                 => '',
     }, 
     "options" => {
-        "busy_time"            => 0,
+        "run_time"             => 0,
         "datname"              => '',
         "help"                 => 0,
         "kill"                 => '',
         "match_query"          => '',
         "match_state"          => '',
         "print"                => 0,
-        "query_user_name"              => '',
+        "query_user_name"      => '',
         "version"              => $VERSION,
         "ignore_match_query"   => '',
         "ignore_match_state"   => '',
@@ -52,7 +52,7 @@ GetOptions(
     'password|p=s'               => \$opt->{setting}->{password},
     'port=i'                     => \$opt->{setting}->{port},
     'user|u=s'                   => \$opt->{setting}->{user},
-    'busy_time|b=i'              => \$opt->{options}->{busy_time},
+    'run_time|r=i'               => \$opt->{options}->{run_time},
     'help'                       => \$opt->{options}->{help},
     'kill'                       => \$opt->{options}->{kill},
     'match_query|mq=s'           => \$opt->{options}->{match_query},
@@ -149,11 +149,11 @@ sub search_queries {
             next;
         }
 
-        if($opt->{options}->{busy_time} != 0) {
+        if($opt->{options}->{run_time} != 0) {
             $qt = $qt_format->parse_datetime(@$ary_ref[7]);
             $qt->set_time_zone('Asia/Tokyo');
             my $diff = $start_time->epoch() - $qt->epoch();
-            if($diff < $opt->{options}->{busy_time}) {
+            if($diff < $opt->{options}->{run_time}) {
                 next;
             }
         }
@@ -181,7 +181,6 @@ sub print_help {
     Kill queries which are matched specified regular expression.
 
   Options:
-    -b   busy_time:      execute time 
     -db  database:       set the database name
     -h   host:           host (localhost)
     -help:               show this help
@@ -194,6 +193,7 @@ sub print_help {
     -p   passward:       set password
     -port:               port number
     -query_user_name:     user who exec query
+    -r   run_time:       execute time 
     -u   user:           Postgres user name 
     -v   version:        version
 OUT
