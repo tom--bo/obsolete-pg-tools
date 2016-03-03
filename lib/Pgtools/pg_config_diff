@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 package Pgtools::pg_config_diff;
 
-use 5.006;
+use 5.021;
 use strict;
 use warnings;
 use DBI;
@@ -12,36 +12,22 @@ use DateTime::Format::Strptime;
 use Perl6::Slurp;
 use JSON::XS;
 use List::MoreUtils qw(uniq);
+use Connection;
+use Conf;
 
 our $VERSION = '0.01';
 
-my $opt = {
-    "help" => 0,
-    0 => {
-        "host"     => "localhost",
-        "port"     => "5432",
-        "user"     => "postgres",
-        "password" => "",
-        "database" => "postgres",
-    },
-    1 => {
-        "host"     => "localhost",
-        "port"     => "5432",
-        "user"     => "postgres",
-        "password" => "",
-        "database" => "postgres",
-    }
-};
+my $help = 0;
 my $conf = {};
 
 $| = 1; # auto-flush STDOUT
 
 GetOptions(
-    'help'              => \$opt->{help},
+    'help' => \$help,
 );
 
 # show help 
-if($opt->{help}){
+if($help){
     &print_help;
     exit;
 }
@@ -49,70 +35,81 @@ if (@ARGV != 2) {
     die "Invalid arguments.\nPlease check pg_config_diff -help\n";
 }
 
-my $db1 = shift @ARGV;
-my $db2 = shift @ARGV;
+my $default = {
+    "host"     => "localhost",
+    "port"     => "5432",
+    "user"     => "postgres",
+    "password" => "",
+    "database" => "postgres"
+};
+my $dummy = {
+    "version"  => "0.0.0",
+    "setting"  => {}
+};
 
-# 引き数を設定
-setArgs($db1, $db2);
+my @dbs = (Connection->new($default), Connection->new($default));
+my @confs = (Conf->new($dummy), Conf->new($dummy));
+for(my $i=0; $i<=$#dbs; $i++) {
+    setArgs($dbs[$i], shift @ARGV);
 
-for(my $i=0; $i<2; $i++) {
-    my $dbh = DBI->connect("dbi:Pg:dbname=$opt->{$i}->{database};host=$opt->{$i}->{host};port=$opt->{$i}->{port}","$opt->{$i}->{user}","$opt->{$i}->{password}") or die "$!\n Error: failed to connect to DB.\n";
+    my $dbh = DBI->connect("dbi:Pg:dbname=".$dbs[$i]->database.";host=".$dbs[$i]->host.";port=".$dbs[$i]->port,$dbs[$i]->user,$dbs[$i]->password) or die "$!\n Error: failed to connect to DB.\n";
 
     my $sth = $dbh->prepare("
-        SELECT
-            name,
-            setting
-        FROM 
-            pg_settings
+        SELECT name, setting FROM pg_settings
     ");
     $sth->execute();
 
     while (my $ary_ref = $sth->fetchrow_arrayref) {
-        $conf->{$i}->{@$ary_ref[0]} = @$ary_ref[1];
+        my $tmp = $confs[$i]->setting;
+        $tmp = {%{$tmp}, (@$ary_ref[0] => @$ary_ref[1])};
+        $confs[$i]->setting($tmp);
     }
+    $sth = $dbh->prepare("
+        SELECT version()
+    ");
+    $sth->execute();
+    my $ref = $sth->fetchrow_arrayref;
+    my @v = split(/ /, @$ref[0], -1);
+    $confs[$i]->version($v[1]);
 
     $sth->finish;
     $dbh->disconnect;
+
 }
- 
-&compare_conf($conf);
+
+&compare_conf(@confs);
 
 sub setArgs {
-    my @t = @_;
-    my $cnt = 0;
-    foreach my $e (@t) {
-        my @tmp = split(/:/, $e, -1);
-        if($#tmp != 4) {
-            die "Invalid arguments.\nPlease check pg_config_diff -help\n";
-        }
-        $opt->{$cnt}->{host} = $tmp[0] if $tmp[0] ne '';
-        $opt->{$cnt}->{port} = $tmp[1] if $tmp[1] ne '';
-        $opt->{$cnt}->{user} = $tmp[2] if $tmp[2] ne '';
-        $opt->{$cnt}->{password} = $tmp[3] if $tmp[3] ne '';
-        $opt->{$cnt}->{database} = $tmp[4] if $tmp[4] ne '';
-        $cnt += 1;
+    my ($db, $option) = @_;
+    my @tmp = split(/:/, $option, -1);
+    if($#tmp != 4) {
+        die "Invalid arguments.\nPlease check pg_config_diff -help\n";
     }
-
+    $db->set("host", $tmp[0]) if $tmp[0] ne '';
+    $db->set("port", $tmp[1]) if $tmp[1] ne '';
+    $db->set("user", $tmp[2]) if $tmp[2] ne '';
+    $db->set("password", $tmp[3]) if $tmp[3] ne '';
+    $db->set("database", $tmp[4]) if $tmp[4] ne '';
 }
 
 sub compare_conf {
     my $cnt = 0;
-    my @keys =  (keys %{$conf->{0}}, keys %{$conf->{1}});
+    my @keys =  (keys $confs[0]->setting, keys $confs[1]->setting);
     @keys = uniq(@keys);
     @keys = sort(@keys);
 
-    print sprintf("%-35s | %-35s | %-35s\n", "columm name", $opt->{0}->{host}, $opt->{1}->{host});
+    print sprintf("%-35s | %-35s | %-35s\n", "columm name", $dbs[0]->host, $dbs[1]->host);
     print sprintf("--------------------------------------------------------------------------------------------\n");
     for my $key (@keys) {
-        if(!defined $conf->{0}->{$key}){
-            $conf->{0}->{$key} = "";
+        if(!defined $confs[0]->setting->{$key}){
+            $confs[0]->setting->{$key} = "";
         }
-        if(!defined $conf->{1}->{$key}){
-            $conf->{1}->{$key} = "";
+        if(!defined $confs[1]->setting->{$key}){
+            $confs[1]->setting->{$key} = "";
         }
-        if($conf->{0}->{$key} ne $conf->{1}->{$key}) {
+        if($confs[0]->setting->{$key} ne $confs[1]->setting->{$key}) {
             $cnt += 1;
-            print sprintf("%-35s | %-35s | %-35s\n", $key, $conf->{0}->{$key}, $conf->{1}->{$key});
+            print sprintf("%-35s | %-35s | %-35s\n", $key, $confs[0]->setting->{$key}, $confs[1]->setting->{$key});
         }
     }
     print "There is no differenct settings.\n" if $cnt == 0;
@@ -137,7 +134,7 @@ sub print_help {
       Hostname: localhost 
       Port    : 5432
       Username: postgres
-      Password: '' (null)
+      Password: '' (empty)
       Database: postgres
 OUT
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 package Pgtools::pg_kill;
 
-use 5.006;
+use 5.021;
 use strict;
 use warnings;
 use DBI;
