@@ -50,7 +50,7 @@ my $dummy = {
 my @dbs = (Connection->new($default), Connection->new($default));
 my @confs = (Conf->new($dummy), Conf->new($dummy));
 for(my $i=0; $i<=$#dbs; $i++) {
-    setArgs($dbs[$i], shift @ARGV);
+    $dbs[$i]->setArgs(shift @ARGV);
 
     my $dbh = DBI->connect("dbi:Pg:dbname=".$dbs[$i]->database.";host=".$dbs[$i]->host.";port=".$dbs[$i]->port,$dbs[$i]->user,$dbs[$i]->password) or die "$!\n Error: failed to connect to DB.\n";
 
@@ -78,19 +78,6 @@ for(my $i=0; $i<=$#dbs; $i++) {
 }
 
 &compare_conf(@confs);
-
-sub setArgs {
-    my ($db, $option) = @_;
-    my @tmp = split(/:/, $option, -1);
-    if($#tmp != 4) {
-        die "Invalid arguments.\nPlease check pg_config_diff -help\n";
-    }
-    $db->set("host", $tmp[0]) if $tmp[0] ne '';
-    $db->set("port", $tmp[1]) if $tmp[1] ne '';
-    $db->set("user", $tmp[2]) if $tmp[2] ne '';
-    $db->set("password", $tmp[3]) if $tmp[3] ne '';
-    $db->set("database", $tmp[4]) if $tmp[4] ne '';
-}
 
 sub compare_conf {
     my $cnt = 0;

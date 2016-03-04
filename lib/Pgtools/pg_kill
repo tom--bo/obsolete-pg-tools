@@ -15,29 +15,26 @@ use JSON::XS;
 our $VERSION = '0.0.1';
 
 my $opt = {
-    "setting" =>  {
-        "database"             => '',
-        "host"                 => 'localhost',
-        "password"             => '',
-        "port"                 => '5432',
-        "user"                 => '',
-    }, 
-    "options" => {
-        "run_time"             => 0,
-        "datname"              => '',
-        "help"                 => 0,
-        "kill"                 => '',
-        "match_query"          => '',
-        "match_state"          => '',
-        "print"                => 0,
-        "query_user_name"      => '',
-        "version"              => $VERSION,
-        "ignore_match_query"   => '',
-        "ignore_match_state"   => '',
-        "ignore_query_user_name"       => ''
-    }
+    "run_time"             => 0,
+    "datname"              => '',
+    "help"                 => 0,
+    "kill"                 => '',
+    "match_query"          => '',
+    "match_state"          => '',
+    "print"                => 0,
+    "query_user_name"      => '',
+    "version"              => $VERSION,
+    "ignore_match_query"   => '',
+    "ignore_match_state"   => '',
+    "ignore_query_user_name" => ''
 };
-
+my $default = {
+    "host"     => "localhost",
+    "port"     => "5432",
+    "user"     => "postgres",
+    "password" => "",
+    "database" => "postgres"
+};
 my ($now, $qt);
 my $start_time = DateTime->now( time_zone => 'Asia/Tokyo' );
 my $qt_format = DateTime::Format::Strptime->new(
@@ -47,35 +44,32 @@ my $qt_format = DateTime::Format::Strptime->new(
 $| = 1; # auto-flush STDOUT
 
 GetOptions(
-    'database|db=s'              => \$opt->{setting}->{database},
-    'host|h=s'                   => \$opt->{setting}->{host},
-    'password|p=s'               => \$opt->{setting}->{password},
-    'port=i'                     => \$opt->{setting}->{port},
-    'user|u=s'                   => \$opt->{setting}->{user},
-    'run_time|r=i'               => \$opt->{options}->{run_time},
-    'help'                       => \$opt->{options}->{help},
-    'kill'                       => \$opt->{options}->{kill},
-    'match_query|mq=s'           => \$opt->{options}->{match_query},
-    'match_state|ms=s'           => \$opt->{options}->{match_state},
-    'print|pr'                   => \$opt->{options}->{print},
-    'query_user_name|un=s'               => \$opt->{options}->{query_user_name},
-    'version|v'                  => \$opt->{options}->{version},
-    "ignore_match_query|imq=s"   => \$opt->{options}->{ignore_match_query},
-    "ignore_match_state|ims=s"   => \$opt->{options}->{ignore_match_state},
-    "ignore_query_user_name|iun=s"       => \$opt->{options}->{ignore_query_user_name},
+    'run_time|r=i'               => \$opt->{run_time},
+    'help'                       => \$opt->{help},
+    'kill'                       => \$opt->{kill},
+    'match_query|mq=s'           => \$opt->{match_query},
+    'match_state|ms=s'           => \$opt->{match_state},
+    'print|pr'                   => \$opt->{print},
+    'query_user_name|un=s'       => \$opt->{query_user_name},
+    'version|v'                  => \$opt->{version},
+    "ignore_match_query|imq=s"   => \$opt->{ignore_match_query},
+    "ignore_match_state|ims=s"   => \$opt->{ignore_match_state},
+    "ignore_query_user_name|iun=s" => \$opt->{ignore_query_user_name},
 );
 
 # show help 
-if($opt->{options}->{help}){
+if($opt->{help}){
     &print_help;
     exit;
 }
 
-my $dbh = DBI->connect(
-    "dbi:Pg:dbname=$opt->{setting}->{database};host=$opt->{setting}->{host};port=$opt->{setting}->{port}",
-    "$opt->{setting}->{user}",
-    "$opt->{setting}->{password}"
-) or die "$!\n Error: failed to connect to DB.\n";
+if (@ARGV != 1) {  
+    die "Invalid arguments.\nPlease check pg_config_diff -help\n";
+}
+
+my $db = Connection->new($default);
+$db->setArgs(shift @ARGV);
+my $dbh = DBI->connect("dbi:Pg:dbname=".$dbs[$i]->database.";host=".$dbs[$i]->host.";port=".$dbs[$i]->port,$dbs[$i]->user,$dbs[$i]->password) or die "$!\n Error: failed to connect to DB.\n";
 
 my $sth = $dbh->prepare("
     SELECT
@@ -102,13 +96,12 @@ $sth->execute();
 
 my @pids = &search_queries($sth, $opt);
 
-if($opt->{options}->{kill}){
+if($opt->{kill}){
     &kill_queries($sth, $opt);
 }
 
 $sth->finish;
 $dbh->disconnect;
-
 
 sub kill_queries {
     my $sth = shift @_;
@@ -117,7 +110,7 @@ sub kill_queries {
     foreach my $val (@pids) {
         $sth = $dbh->prepare("SELECT pg_terminate_backend(".$val.");");
         $now = DateTime->now( time_zone => 'local' );
-        print "killed-pid: " . $val . ", at " .  $now->strftime('%Y/%m/%d %H:%M:%S') . "\n" if $opt->{options}->{print};
+        print "killed-pid: " . $val . ", at " .  $now->strftime('%Y/%m/%d %H:%M:%S') . "\n" if $opt->{print};
         $sth->execute();
     }
 }
@@ -127,37 +120,37 @@ sub search_queries {
     my $opt = shift @_;
 
     while (my $ary_ref = $sth->fetchrow_arrayref) {
-        if($opt->{setting}->{database} ne @$ary_ref[0]) {
+        if($opt->{database} ne @$ary_ref[0]) {
             next;
         }
-        if($opt->{options}->{query_user_name} ne '' and @$ary_ref[2] ne $opt->{options}->{query_user_name}) { 
+        if($opt->{query_user_name} ne '' and @$ary_ref[2] ne $opt->{query_user_name}) { 
             next;
         }
-        if($opt->{options}->{match_state} ne '' and @$ary_ref[12] ne $opt->{options}->{match_state}) { 
+        if($opt->{match_state} ne '' and @$ary_ref[12] ne $opt->{match_state}) { 
             next;
         }
-        if($opt->{options}->{match_query} ne '' and @$ary_ref[13] !~ /$opt->{options}->{match_query}/im ) {
+        if($opt->{match_query} ne '' and @$ary_ref[13] !~ /$opt->{match_query}/im ) {
             next;
         }
-        if($opt->{options}->{ignore_query_user_name} ne '' and @$ary_ref[2] eq $opt->{options}->{ignore_query_user_name}) { 
+        if($opt->{ignore_query_user_name} ne '' and @$ary_ref[2] eq $opt->{ignore_query_user_name}) { 
             next;
         }
-        if($opt->{options}->{ignore_match_state} ne '' and @$ary_ref[12] eq $opt->{options}->{ignore_match_state}) { 
+        if($opt->{ignore_match_state} ne '' and @$ary_ref[12] eq $opt->{ignore_match_state}) { 
             next;
         }
-        if($opt->{options}->{ignore_match_query} ne '' and @$ary_ref[13] =~ /$opt->{options}->{ignore_match_query}/im ) {
+        if($opt->{ignore_match_query} ne '' and @$ary_ref[13] =~ /$opt->{ignore_match_query}/im ) {
             next;
         }
 
-        if($opt->{options}->{run_time} != 0) {
+        if($opt->{run_time} != 0) {
             $qt = $qt_format->parse_datetime(@$ary_ref[7]);
             $qt->set_time_zone('Asia/Tokyo');
             my $diff = $start_time->epoch() - $qt->epoch();
-            if($diff < $opt->{options}->{run_time}) {
+            if($diff < $opt->{run_time}) {
                 next;
             }
         }
-        if($opt->{options}->{print} and !$opt->{options}->{kill}) {
+        if($opt->{print} and !$opt->{kill}) {
             &print_query($ary_ref);
         }
         push(@pids, $ary_ref->[1]);
