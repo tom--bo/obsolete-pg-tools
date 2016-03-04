@@ -11,6 +11,7 @@ use DateTime;
 use DateTime::Format::Strptime;
 use Perl6::Slurp;
 use JSON::XS;
+use Connection;
 
 our $VERSION = '0.0.1';
 
@@ -69,13 +70,12 @@ if (@ARGV != 1) {
 
 my $db = Connection->new($default);
 $db->setArgs(shift @ARGV);
-my $dbh = DBI->connect("dbi:Pg:dbname=".$dbs[$i]->database.";host=".$dbs[$i]->host.";port=".$dbs[$i]->port,$dbs[$i]->user,$dbs[$i]->password) or die "$!\n Error: failed to connect to DB.\n";
+my $dbh = DBI->connect("dbi:Pg:dbname=".$db->database.";host=".$db->host.";port=".$db->port,$db->user,$db->password) or die "$!\n Error: failed to connect to DB.\n";
 
 my $sth = $dbh->prepare("
     SELECT
         datname,
         pid,
-        query_user_name,
         application_name,
         client_addr,
         client_hostname,
@@ -120,30 +120,27 @@ sub search_queries {
     my $opt = shift @_;
 
     while (my $ary_ref = $sth->fetchrow_arrayref) {
-        if($opt->{database} ne @$ary_ref[0]) {
+        if($db->database ne @$ary_ref[0]) {
             next;
         }
-        if($opt->{query_user_name} ne '' and @$ary_ref[2] ne $opt->{query_user_name}) { 
+        if($opt->{match_state} ne '' and @$ary_ref[11] ne $opt->{match_state}) { 
             next;
         }
-        if($opt->{match_state} ne '' and @$ary_ref[12] ne $opt->{match_state}) { 
+        if($opt->{match_query} ne '' and @$ary_ref[12] !~ /$opt->{match_query}/im ) {
             next;
         }
-        if($opt->{match_query} ne '' and @$ary_ref[13] !~ /$opt->{match_query}/im ) {
+        if($opt->{ignore_query_user_name} ne '' and @$ary_ref[1] eq $opt->{ignore_query_user_name}) { 
             next;
         }
-        if($opt->{ignore_query_user_name} ne '' and @$ary_ref[2] eq $opt->{ignore_query_user_name}) { 
+        if($opt->{ignore_match_state} ne '' and @$ary_ref[11] eq $opt->{ignore_match_state}) { 
             next;
         }
-        if($opt->{ignore_match_state} ne '' and @$ary_ref[12] eq $opt->{ignore_match_state}) { 
-            next;
-        }
-        if($opt->{ignore_match_query} ne '' and @$ary_ref[13] =~ /$opt->{ignore_match_query}/im ) {
+        if($opt->{ignore_match_query} ne '' and @$ary_ref[12] =~ /$opt->{ignore_match_query}/im ) {
             next;
         }
 
         if($opt->{run_time} != 0) {
-            $qt = $qt_format->parse_datetime(@$ary_ref[7]);
+            $qt = $qt_format->parse_datetime(@$ary_ref[6]);
             $qt->set_time_zone('Asia/Tokyo');
             my $diff = $start_time->epoch() - $qt->epoch();
             if($diff < $opt->{run_time}) {
@@ -162,9 +159,9 @@ sub print_query {
     my $ary_ref = shift @_;
     print "-------------------------------\n";
     print "pid: @$ary_ref[1]"."\n";
-    print "start_time: @$ary_ref[7]"."\n";
-    print "state: @$ary_ref[12]"."\n";
-    print "query: @$ary_ref[13]"."\n";
+    print "start_time: @$ary_ref[6]"."\n";
+    print "state: @$ary_ref[11]"."\n";
+    print "query: @$ary_ref[12]"."\n";
 }
 
 sub print_help {
