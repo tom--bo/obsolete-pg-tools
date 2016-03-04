@@ -35,7 +35,7 @@ sub main {
 
         my $sth = $dbh->prepare("
             SELECT name, setting FROM pg_settings
-            ");
+        ");
         $sth->execute();
 
         while (my $ary_ref = $sth->fetchrow_arrayref) {
@@ -45,7 +45,7 @@ sub main {
         }
         $sth = $dbh->prepare("
             SELECT version()
-            ");
+        ");
         $sth->execute();
         my $ref = $sth->fetchrow_arrayref;
         my @v = split(/ /, @$ref[0], -1);
@@ -55,7 +55,17 @@ sub main {
         $dbh->disconnect;
     }
 
+    &compare_version(\@confs);
     &compare_conf(\@confs, \@dbs);
+}
+
+sub compare_version {
+    my $confs = shift @_;
+    if(@$confs[0]->version ne @$confs[1]->version) {
+        print "************************\n";
+        print " Version is defferent!! \n";
+        print "************************\n";
+    }
 }
 
 sub compare_conf {
@@ -65,6 +75,7 @@ sub compare_conf {
     @keys = sort(@keys);
     my $cnt = 0;
 
+    print sprintf("--------------------------------------------------------------------------------------------\n");
     print sprintf("%-35s | %-35s | %-35s\n", "columm name", @$dbs[0]->host, @$dbs[1]->host);
     print sprintf("--------------------------------------------------------------------------------------------\n");
     for my $key (@keys) {
@@ -88,21 +99,21 @@ sub print_help {
 
     Show different settings between 2 PostgreSQL databases.
 
-  Options:
-    -help:  show this help.
+    Options:
+      -help:  show this help.
 
-  Args:
-    This command need 2 argument which is string to specify the databases.
-    1 argument should contain hostname, port, username, password, and database.
-    These should be separated by  colon(:). 
-    You can omit these pieces except hostname, and then you should insert no character between colons.
-    Default setting is applied when you omit argument pieces. 
-    Default setting is ...
-      Hostname: localhost 
-      Port    : 5432
-      Username: postgres
-      Password: '' (empty)
-      Database: postgres
+    Args:
+      This command need 2 argument which is string to specify the databases.
+      1 argument should contain hostname, port, username, password, and database.
+      These should be separated by  colon(:). 
+      You can omit these pieces except hostname, and then you should insert no character between colons.
+      Default setting is applied when you omit argument pieces. 
+      Default setting is ...
+        Hostname: localhost 
+        Port    : 5432
+        Username: postgres
+        Password: '' (empty)
+        Database: postgres
 OUT
 }
 

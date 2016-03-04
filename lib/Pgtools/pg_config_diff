@@ -32,7 +32,6 @@ if (@ARGV != 2) {
     die "Invalid arguments.\nPlease check pg_config_diff -help\n";
 }
 
-
 my $s = Config_diff->new({"argv" => \@ARGV});
 $s->main();
 
