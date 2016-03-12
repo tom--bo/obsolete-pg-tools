@@ -7,7 +7,6 @@ use Mod::Conf;
 use Data::Dumper;
 use List::MoreUtils qw(uniq);
 use parent qw(Class::Accessor);
-Config_diff->mk_accessors(qw(argv));
 
 sub exec {
     my $default = {
@@ -32,7 +31,7 @@ sub exec {
         $confs[$i]->get_config($dbs[$i]);
     }
 
-    &compare_version(\@confs);
+    &check_version(\@confs);
     my $diff_keys = &get_different_keys(\@confs);
     if(scalar(@$diff_keys) == 0) {
         print "There is no differenct settings.\n" ;
@@ -41,7 +40,7 @@ sub exec {
     &print_difference(\@confs, \@dbs, $diff_keys);
 }
 
-sub compare_version {
+sub check_version {
     my $confs = shift @_;
     my $version = @$confs[0]->version;
     for(my $i=1; $i<scalar(@_); $i++) {

@@ -32,7 +32,7 @@ if (@ARGV < 2) {
     die "Insufficient arguments.\nPlease check pg_config_diff -help\n";
 }
 
-my $s = Config_diff->new({"argv" => \@ARGV});
+my $s = Config_diff->new();
 $s->exec();
 
 sub print_help {
