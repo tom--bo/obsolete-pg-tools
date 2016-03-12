@@ -31,7 +31,9 @@ sub exec {
         $confs[$i]->get_config($dbs[$i]);
     }
 
-    &check_version(\@confs);
+    my $is_different = &check_version(\@confs);
+    &warn_difference() if $is_different == 1;;
+
     my $diff_keys = &get_different_keys(\@confs);
     if(scalar(@$diff_keys) == 0) {
         print "There is no differenct settings.\n" ;
@@ -45,12 +47,16 @@ sub check_version {
     my $version = @$confs[0]->version;
     for(my $i=1; $i<scalar(@_); $i++) {
         if($version ne @$confs[$i]->version) {
-            print "************************\n";
-            print " Different Version !!\n";
-            print "************************\n";
-            return;
+            return 1;
         }
     }
+    return 0;
+}
+
+sub warn_difference {
+    print "************************\n";
+    print " Different Version !!\n";
+    print "************************\n";
 }
 
 sub get_different_keys {

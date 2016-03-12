@@ -8,7 +8,7 @@ use DBI;
 use Mod::Setting;
 use Data::Dumper;
 use parent qw(Class::Accessor);
-Kill->mk_accessors(qw(argv opt));
+Kill->mk_accessors(qw(opt));
 
 our ($now, $qt);
 our $qt_format = DateTime::Format::Strptime->new(
