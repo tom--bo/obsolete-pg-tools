@@ -2,14 +2,14 @@ package Config_diff;
 use strict;
 use warnings;
 
-use Mod::Connection;
+use Mod::Setting;
 use Mod::Conf;
 use Data::Dumper;
 use List::MoreUtils qw(uniq);
 use parent qw(Class::Accessor);
 Config_diff->mk_accessors(qw(argv));
 
-sub main {
+sub exec {
     my $default = {
         "host"     => "localhost",
         "port"     => "5432",
@@ -21,12 +21,16 @@ sub main {
         "version"  => "0.0.0",
         "setting"  => {}
     };
+    my @dbs;
+    my @confs;
+    my $db_cnt = @ARGV;
 
-    my @dbs = (Connection->new($default), Connection->new($default));
-    my @confs = (Conf->new($dummy), Conf->new($dummy));
-    for(my $i=0; $i<=$#dbs; $i++) {
-        $dbs[$i]->setArgs(shift @ARGV);
-
+    for(my $i=0; $i<$db_cnt; $i++) {
+        push(@dbs, Setting->new($default));
+        push(@confs, Conf->new($dummy));
+        $dbs[$i]->setArgs($ARGV[$i]);
+    }
+    for(my $i=0; $i<=$db_cnt; $i++) {
         my $dbh = DBI->connect(
             "dbi:Pg:dbname=".$dbs[$i]->database.";host=".$dbs[$i]->host.";port=".$dbs[$i]->port,
             $dbs[$i]->user,

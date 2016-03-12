@@ -9,7 +9,7 @@ use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
 use Perl6::Slurp;
 use JSON::XS;
 use Mod::Kill;
-use Mod::Connection;
+use Mod::Setting;
 
 our $VERSION = '0.0.1';
 $| = 1; # auto-flush STDOUT

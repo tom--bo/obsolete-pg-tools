@@ -12,7 +12,7 @@ use DateTime::Format::Strptime;
 use Perl6::Slurp;
 use JSON::XS;
 use Mod::Config_diff;
-use Mod::Connection;
+use Mod::Setting;
 use Mod::Conf;
 
 our $VERSION = '0.01';
@@ -28,12 +28,12 @@ if($help){
     exit;
 }
 
-if (@ARGV != 2) {  
-    die "Invalid arguments.\nPlease check pg_config_diff -help\n";
+if (@ARGV < 2) {  
+    die "Insufficient arguments.\nPlease check pg_config_diff -help\n";
 }
 
 my $s = Config_diff->new({"argv" => \@ARGV});
-$s->main();
+$s->exec();
 
 
 __END__

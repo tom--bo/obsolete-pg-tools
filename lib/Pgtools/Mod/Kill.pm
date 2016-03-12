@@ -5,7 +5,7 @@ use DateTime;
 use DateTime::Format::Strptime;
 use DBI;
 
-use Mod::Connection;
+use Mod::Setting;
 use Data::Dumper;
 use parent qw(Class::Accessor);
 Kill->mk_accessors(qw(argv opt));
@@ -26,7 +26,7 @@ sub main {
         "database" => "postgres"
     };
 
-    my $db = Connection->new($default);
+    my $db = Setting->new($default);
     $db->setArgs(shift @ARGV);
     my $dbh = DBI->connect("dbi:Pg:dbname=".$db->database.";host=".$db->host.";port=".$db->port,$db->user,$db->password) or die "$!\n Error: failed to connect to DB.\n";
 

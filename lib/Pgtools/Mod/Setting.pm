@@ -1,9 +1,9 @@
-package Connection;
+package Setting;
 use strict;
 use warnings;
 
 use parent qw(Class::Accessor);
-Connection->mk_accessors(qw(host port user password database));
+Setting->mk_accessors(qw(host port user password database));
 
 sub setArgs {
     my $self = shift;
