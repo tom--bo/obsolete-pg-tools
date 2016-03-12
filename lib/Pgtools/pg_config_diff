@@ -35,6 +35,30 @@ if (@ARGV < 2) {
 my $s = Config_diff->new({"argv" => \@ARGV});
 $s->exec();
 
+sub print_help {
+    print <<OUT;
+    $0 [-hv] arg1 arg2
+
+    Show different settings between 2 PostgreSQL databases.
+
+    Options:
+      -help:  show this help.
+
+    Args:
+      This command need 2 argument which is string to specify the databases.
+      1 argument should contain hostname, port, username, password, and database.
+      These should be separated by  colon(:). 
+      You can omit these pieces except hostname, and then you should insert no character between colons.
+      Default setting is applied when you omit argument pieces. 
+      Default setting is ...
+        Hostname: localhost 
+        Port    : 5432
+        Username: postgres
+        Password: '' (empty)
+        Database: postgres
+OUT
+}
+
 
 __END__
 

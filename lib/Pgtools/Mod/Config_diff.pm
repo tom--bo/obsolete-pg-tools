@@ -19,7 +19,7 @@ sub exec {
     };
     my $dummy = {
         "version"  => "0.0.0",
-        "setting"  => {}
+        "item"  => {}
     };
     my @dbs;
     my @confs;
@@ -29,98 +29,74 @@ sub exec {
         push(@dbs, Setting->new($default));
         push(@confs, Conf->new($dummy));
         $dbs[$i]->setArgs($ARGV[$i]);
-    }
-    for(my $i=0; $i<=$db_cnt; $i++) {
-        my $dbh = DBI->connect(
-            "dbi:Pg:dbname=".$dbs[$i]->database.";host=".$dbs[$i]->host.";port=".$dbs[$i]->port,
-            $dbs[$i]->user,
-            $dbs[$i]->password
-        ) or die "$!\n Error: failed to connect to DB.\n";
-
-        my $sth = $dbh->prepare("
-            SELECT name, setting FROM pg_settings
-        ");
-        $sth->execute();
-
-        while (my $ary_ref = $sth->fetchrow_arrayref) {
-            my $tmp = $confs[$i]->setting;
-            $tmp = {%{$tmp}, (@$ary_ref[0] => @$ary_ref[1])};
-            $confs[$i]->setting($tmp);
-        }
-        $sth = $dbh->prepare("
-            SELECT version()
-        ");
-        $sth->execute();
-        my $ref = $sth->fetchrow_arrayref;
-        my @v = split(/ /, @$ref[0], -1);
-        $confs[$i]->version($v[1]);
-
-        $sth->finish;
-        $dbh->disconnect;
+        $confs[$i]->get_config($dbs[$i]);
     }
 
     &compare_version(\@confs);
-    &compare_conf(\@confs, \@dbs);
+    my $diff_keys = &get_different_keys(\@confs);
+    if(scalar(@$diff_keys) == 0) {
+        print "There is no differenct settings.\n" ;
+        return;
+    }
+    &print_difference(\@confs, \@dbs, $diff_keys);
 }
 
 sub compare_version {
     my $confs = shift @_;
-    if(@$confs[0]->version ne @$confs[1]->version) {
-        print "************************\n";
-        print " Version is defferent!! \n";
-        print "************************\n";
+    my $version = @$confs[0]->version;
+    for(my $i=1; $i<scalar(@_); $i++) {
+        if($version ne @$confs[$i]->version) {
+            print "************************\n";
+            print " Different Version !!\n";
+            print "************************\n";
+            return;
+        }
     }
 }
 
-sub compare_conf {
-    my ($confs, $dbs) = @_;
-    my @keys =  (keys @$confs[0]->setting, keys @$confs[1]->setting);
+sub get_different_keys {
+    my $confs = shift @_;
+    my $db_cnt = scalar(@$confs);
+    my $tmp, my $tmp_item;
+    my @keys, my @diff_keys;
+
+    for(my $i=0; $i<$db_cnt; $i++) {
+        $tmp = @$confs[$i]->item;
+        push(@keys, keys(%$tmp));
+    }
     @keys = uniq(@keys);
     @keys = sort(@keys);
-    my $cnt = 0;
 
-    print sprintf("--------------------------------------------------------------------------------------------\n");
-    print sprintf("%-35s | %-35s | %-35s\n", "columm name", @$dbs[0]->host, @$dbs[1]->host);
-    print sprintf("--------------------------------------------------------------------------------------------\n");
     for my $key (@keys) {
-        if(!defined @$confs[0]->setting->{$key}){
-            @$confs[0]->setting->{$key} = "";
+        for(my $i=0; $i<$db_cnt; $i++) {
+            if(!defined @$confs[$i]->item->{$key}){
+                @$confs[$i]->item->{$key} = "";
+            }
         }
-        if(!defined @$confs[1]->setting->{$key}){
-            @$confs[1]->setting->{$key} = "";
-        }
-        if(@$confs[0]->setting->{$key} ne @$confs[1]->setting->{$key}) {
-            $cnt += 1;
-            print sprintf("%-35s | %-35s | %-35s\n", $key, @$confs[0]->setting->{$key}, @$confs[1]->setting->{$key});
+
+        $tmp_item = @$confs[0]->item->{$key};
+        for(my $i=1; $i<$db_cnt; $i++) {
+            if($tmp_item ne @$confs[1]->item->{$key}) {
+                push(@diff_keys, $key);
+            }
         }
     }
-    print "There is no differenct settings.\n" if $cnt == 0;
+    return \@diff_keys;
 }
 
-sub print_help {
-    print <<OUT;
-    $0 [-hv] arg1 arg2
-
-    Show different settings between 2 PostgreSQL databases.
-
-    Options:
-      -help:  show this help.
-
-    Args:
-      This command need 2 argument which is string to specify the databases.
-      1 argument should contain hostname, port, username, password, and database.
-      These should be separated by  colon(:). 
-      You can omit these pieces except hostname, and then you should insert no character between colons.
-      Default setting is applied when you omit argument pieces. 
-      Default setting is ...
-        Hostname: localhost 
-        Port    : 5432
-        Username: postgres
-        Password: '' (empty)
-        Database: postgres
-OUT
+sub print_difference {
+    my ($confs, $dbs, $diff_keys) = @_;
+    my $db_cnt = scalar(@$confs);
+    my $key_cnt = scalar(@$diff_keys);
+    for(my $i=0; $i<$key_cnt; $i++) {
+        my $key = @$diff_keys[$i];
+        printf("%-15s------------\n", $key);
+        for(my $j=0; $j<$db_cnt; $j++) {
+            printf("  %-15s - %-20s\n", @$dbs[$j]->host, @$confs[$j]->item->{$key});
+        }
+    }
 }
-
 
 
 1;
+
