@@ -13,8 +13,6 @@ my $s = Config_diff->new({"argv" => \@ARGV});
 ok $s;
 isa_ok($s, "Config_diff");
 
-done_testing;
-
 # ///////////////
 # check_version
 # ///////////////
@@ -28,4 +26,6 @@ done_testing;
 
 
 
+
+done_testing;
 

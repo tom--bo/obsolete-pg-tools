@@ -6,9 +6,10 @@ use DateTime::Format::Strptime;
 use DBI;
 
 use Mod::Setting;
+use Mod::Query;
 use Data::Dumper;
 use parent qw(Class::Accessor);
-Kill->mk_accessors(qw(opt));
+Kill->mk_accessors(qw(help ignore_match_query ignore_match_state ignore_query_user_name kill match_query match_state print query_user_name run_time version));
 
 our ($now, $qt);
 our $qt_format = DateTime::Format::Strptime->new(
@@ -16,7 +17,7 @@ our $qt_format = DateTime::Format::Strptime->new(
 );
 our $start_time = DateTime->now( time_zone => 'Asia/Tokyo' );
 
-sub main {
+sub exec {
     my $self = shift;
     my $default = {
         "host"     => "localhost",
@@ -28,126 +29,124 @@ sub main {
 
     my $db = Setting->new($default);
     $db->setArgs(shift @ARGV);
+    
     my $dbh = DBI->connect("dbi:Pg:dbname=".$db->database.";host=".$db->host.";port=".$db->port,$db->user,$db->password) or die "$!\n Error: failed to connect to DB.\n";
 
-    my $sth = $dbh->prepare("
-        SELECT
-        datname,
-        pid,
-        application_name,
-        client_addr,
-        client_hostname,
-        client_port,
-        backend_start,
-        xact_start,
-        query_start,
-        state_change,
-        waiting,
-        state,
-        query
-        FROM 
-        pg_stat_activity
-        WHERE 
-        pid <> pg_backend_pid()
-        ");
-    $sth->execute();
+    # return hash reference
+    my $queries = &search_queries($dbh, $self, $db);
 
-    my @pids = &search_queries($db, $sth, $self->opt);
-
-    if($self->opt->{kill}){
-        &kill_queries($dbh, $self->opt, \@pids);
+    if($self->print and !$self->kill) {
+        &print_query($queries);
+    }
+    if($self->kill){
+        &kill_queries($dbh, $self, $queries);
     }
 
-    $sth->finish;
     $dbh->disconnect;
 }
 
 sub kill_queries {
-    my ($dbh, $opt, $pids) = @_;
+    my ($dbh, $self, $queries) = @_;
     my ($sth, $now);
 
-    foreach my $val (@$pids) {
-        $sth = $dbh->prepare("SELECT pg_terminate_backend(".$val.");");
+    foreach my $pid (keys(%$queries)) {
+        $sth = $dbh->prepare("SELECT pg_terminate_backend(".$pid.");");
         $now = DateTime->now( time_zone => 'local' );
-        print "killed-pid: " . $val . ", at " .  $now->strftime('%Y/%m/%d %H:%M:%S') . "\n" if $opt->{print};
+        if($self->print) {
+            print "killed-pid: ".$pid.", at ".$now->strftime('%Y/%m/%d %H:%M:%S')."\n";
+            print "query     : ".$queries->{$pid}->{query}."\n";
+        }
         $sth->execute();
     }
 }
 
 sub search_queries {
-    my ($db, $sth, $opt) = @_;
+    my ($dbh, $self, $db) = @_;
     my @pids;
+    my $queries = {};
+
+    my $sth = $dbh->prepare("
+        SELECT
+            datname,
+            pid,
+            application_name,
+            client_addr,
+            client_hostname,
+            client_port,
+            backend_start,
+            xact_start,
+            query_start,
+            state_change,
+            waiting,
+            state,
+            query
+        FROM 
+            pg_stat_activity
+        WHERE 
+            pid <> pg_backend_pid()
+    ");
+    $sth->execute();
 
     while (my $ary_ref = $sth->fetchrow_arrayref) {
         if($db->database ne @$ary_ref[0]) {
             next;
         }
-        if($opt->{match_state} ne '' and @$ary_ref[11] ne $opt->{match_state}) { 
+        if($self->match_state ne '' and @$ary_ref[11] ne $self->match_state) { 
             next;
         }
-        if($opt->{match_query} ne '' and @$ary_ref[12] !~ /$opt->{match_query}/im ) {
+        if($self->match_query ne '' and @$ary_ref[12] !~ /$self->{match_query}/im ) {
             next;
         }
-        if($opt->{ignore_query_user_name} ne '' and @$ary_ref[1] eq $opt->{ignore_query_user_name}) { 
+        if($self->ignore_query_user_name ne '' and @$ary_ref[1] eq $self->ignore_query_user_name) { 
             next;
         }
-        if($opt->{ignore_match_state} ne '' and @$ary_ref[11] eq $opt->{ignore_match_state}) { 
+        if($self->ignore_match_state ne '' and @$ary_ref[11] eq $self->ignore_match_state) { 
             next;
         }
-        if($opt->{ignore_match_query} ne '' and @$ary_ref[12] =~ /$opt->{ignore_match_query}/im ) {
+        if($self->ignore_match_query ne '' and @$ary_ref[12] =~ /$self->{ignore_match_query}/im ) {
             next;
         }
-
-        if($opt->{run_time} != 0) {
+        if($self->run_time != 0) {
             $qt = $qt_format->parse_datetime(@$ary_ref[6]);
             $qt->set_time_zone('Asia/Tokyo');
             my $diff = $start_time->epoch() - $qt->epoch();
-            if($diff < $opt->{run_time}) {
+            if($diff < $self->run_time) {
                 next;
             }
         }
-        if($opt->{print} and !$opt->{kill}) {
-            &print_query($ary_ref);
-        }
-        push(@pids, $ary_ref->[1]);
+        my $tmp = {
+            "datname" => $ary_ref->[0],
+            "pid" => $ary_ref->[1],
+            "application_name" => $ary_ref->[2],
+            "client_addr" => $ary_ref->[3],
+            "client_hostname" => $ary_ref->[4],
+            "client_port" => $ary_ref->[5],
+            "backend_start" => $ary_ref->[6],
+            "xact_start" => $ary_ref->[7],
+            "query_start" => $ary_ref->[8],
+            "state_change" => $ary_ref->[9],
+            "waiting" => $ary_ref->[10],
+            "state" => $ary_ref->[11],
+            "query" => $ary_ref->[12]
+        };
+        my $q = Query->new($tmp);
+        $queries = {%{$queries},$ary_ref->[1] => $q};
     }
-    return @pids;
+    $sth->finish;
+
+    return $queries;
 }
 
 sub print_query {
-    my $ary_ref = shift @_;
-    print "-------------------------------\n";
-    print "pid: @$ary_ref[1]"."\n";
-    print "start_time: @$ary_ref[6]"."\n";
-    print "state: @$ary_ref[11]"."\n";
-    print "query: @$ary_ref[12]"."\n";
+    my $queries = shift @_;
+    foreach my $q (keys(%$queries)) {
+        print "-------------------------------\n";
+        print "pid       : ".$queries->{$q}->{pid}."\n";
+        print "start_time: ".$queries->{$q}->{query_start}."\n";
+        print "state     : ".$queries->{$q}->{state}."\n";
+        print "query     : ".$queries->{$q}->{query}."\n";
+    }
 }
-
-sub print_help {
-    print <<OUT;
-    $0 -help | [-(options below)]
-
-    Kill queries which are matched specified regular expression.
-
-  Options:
-    -db  database:       set the database name
-    -h   host:           host (localhost)
-    -help:               show this help
-    -ignore_match_query: except matching query
-    -ignore_match_state: except matching state
-    -kill:               kill query which matched condition
-    -mq  match_query:    query match
-    -ms  match_state:    state match
-    -pr  print:          print killed queries info
-    -p   passward:       set password
-    -port:               port number
-    -query_user_name:     user who exec query
-    -r   run_time:       execute time 
-    -u   user:           Postgres user name 
-    -v   version:        version
-OUT
-}
-
 
 
 1;

@@ -19,12 +19,18 @@ our $VERSION = '0.01';
 $| = 1; # auto-flush STDOUT
 
 my $help = 0;
+my $version = 0;
 GetOptions(
-    'help' => \$help,
+    'help|h'    => \$help,
+    'version|v' => \$version,
 );
 
 if($help){
     &print_help;
+    exit;
+}
+if($version){
+    print "Version: ".$VERSION."\n";
     exit;
 }
 

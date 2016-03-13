@@ -15,32 +15,31 @@ our $VERSION = '0.0.1';
 $| = 1; # auto-flush STDOUT
 
 my $opt = {
-    "run_time"             => 0,
-    "datname"              => '',
-    "help"                 => 0,
-    "kill"                 => '',
-    "match_query"          => '',
-    "match_state"          => '',
-    "print"                => 0,
-    "query_user_name"      => '',
-    "version"              => $VERSION,
-    "ignore_match_query"   => '',
-    "ignore_match_state"   => '',
-    "ignore_query_user_name" => ''
+    "help"                   => 0,
+    "ignore_match_query"     => '',
+    "ignore_match_state"     => '',
+    "ignore_query_user_name" => '',
+    "kill"                   => '',
+    "match_query"            => '',
+    "match_state"            => '',
+    "print"                  => 0,
+    "query_user_name"        => '',
+    "run_time"               => 0,
+    "version"                => 0,
 };
 
 GetOptions(
-    'run_time|r=i'               => \$opt->{run_time},
-    'help'                       => \$opt->{help},
+    'help|h'                     => \$opt->{help},
+    "ignore_match_query|imq=s"   => \$opt->{ignore_match_query},
+    "ignore_match_state|ims=s"   => \$opt->{ignore_match_state},
+    "ignore_query_user_name|iun=s" => \$opt->{ignore_query_user_name},
     'kill'                       => \$opt->{kill},
     'match_query|mq=s'           => \$opt->{match_query},
     'match_state|ms=s'           => \$opt->{match_state},
     'print|pr'                   => \$opt->{print},
     'query_user_name|un=s'       => \$opt->{query_user_name},
+    'run_time|r=i'               => \$opt->{run_time},
     'version|v'                  => \$opt->{version},
-    "ignore_match_query|imq=s"   => \$opt->{ignore_match_query},
-    "ignore_match_state|ims=s"   => \$opt->{ignore_match_state},
-    "ignore_query_user_name|iun=s" => \$opt->{ignore_query_user_name},
 );
 
 # show help 
@@ -48,19 +47,46 @@ if($opt->{help}){
     &print_help;
     exit;
 }
+if($opt->{version}){
+    print "Version: ".$VERSION."\n";
+    exit;
+}
 
 if (@ARGV != 1) {  
     die "Invalid arguments.\nPlease check pg_config_diff -help\n";
 }
 
-my $s = Kill->new({
-    "argv" => \@ARGV,
-    "opt"  => $opt
-});
-$s->main();
+my $s = Kill->new($opt);
+$s->exec();
+
+
+sub print_help {
+    print <<OUT;
+    $0 -help | [-(options below)]
+
+    Kill queries which are matched specified regular expression.
+
+  Options:
+    -db  database:       set the database name
+    -h   host:           host (localhost)
+    -help:               show this help
+    -ignore_match_query: except matching query
+    -ignore_match_state: except matching state
+    -kill:               kill query which matched condition
+    -mq  match_query:    query match
+    -ms  match_state:    state match
+    -pr  print:          print killed queries info
+    -p   passward:       set password
+    -port:               port number
+    -query_user_name:     user who exec query
+    -r   run_time:       execute time 
+    -u   user:           Postgres user name 
+    -v   version:        version
+OUT
+}
+
 
 __END__
-
 
 
 =head1 NAME

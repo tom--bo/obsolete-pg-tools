@@ -8,7 +8,7 @@ Setting->mk_accessors(qw(host port user password database));
 sub setArgs {
     my $self = shift;
     my ($option) = @_;
-    my @tmp = split(/:/, $option, -1);
+    my @tmp = split(/,/, $option, -1);
     if($#tmp != 4) {
         die "Invalid arguments.\nPlease check pg_config_diff -help\n";
     }

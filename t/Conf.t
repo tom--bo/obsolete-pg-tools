@@ -16,11 +16,12 @@ my $c = Conf->new($dummy);
 ok $c;
 isa_ok($c, "Conf");
 
-done_testing;
 
 # ///////////////
 # get_config
 # ///////////////
 
 
+
+done_testing;
 
