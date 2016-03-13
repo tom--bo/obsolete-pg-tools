@@ -86,50 +86,49 @@ sub search_queries {
     ");
     $sth->execute();
 
-    while (my $ary_ref = $sth->fetchrow_arrayref) {
-        if($db->database ne @$ary_ref[0]) {
+    while (my $hash_ref = $sth->fetchrow_hashref) {
+        my %row = %$hash_ref;
+        if($db->database ne $row{datname}) {
             next;
         }
-        if($self->match_state ne '' and @$ary_ref[11] ne $self->match_state) { 
+        if($self->match_state ne '' and $row{state} ne $self->match_state) { 
             next;
         }
-        if($self->match_query ne '' and @$ary_ref[12] !~ /$self->{match_query}/im ) {
+        if($self->match_query ne '' and $row{query} !~ /$self->{match_query}/im ) {
             next;
         }
-        if($self->ignore_query_user_name ne '' and @$ary_ref[1] eq $self->ignore_query_user_name) { 
+        if($self->ignore_match_state ne '' and $row{state} eq $self->ignore_match_state) { 
             next;
         }
-        if($self->ignore_match_state ne '' and @$ary_ref[11] eq $self->ignore_match_state) { 
-            next;
-        }
-        if($self->ignore_match_query ne '' and @$ary_ref[12] =~ /$self->{ignore_match_query}/im ) {
+        if($self->ignore_match_query ne '' and $row{query} =~ /$self->{ignore_match_query}/im ) {
             next;
         }
         if($self->run_time != 0) {
-            $qt = $qt_format->parse_datetime(@$ary_ref[6]);
+            $qt = $qt_format->parse_datetime($row{backend_start});
             $qt->set_time_zone('Asia/Tokyo');
             my $diff = $start_time->epoch() - $qt->epoch();
             if($diff < $self->run_time) {
                 next;
             }
         }
+ 
         my $tmp = {
-            "datname" => $ary_ref->[0],
-            "pid" => $ary_ref->[1],
-            "application_name" => $ary_ref->[2],
-            "client_addr" => $ary_ref->[3],
-            "client_hostname" => $ary_ref->[4],
-            "client_port" => $ary_ref->[5],
-            "backend_start" => $ary_ref->[6],
-            "xact_start" => $ary_ref->[7],
-            "query_start" => $ary_ref->[8],
-            "state_change" => $ary_ref->[9],
-            "waiting" => $ary_ref->[10],
-            "state" => $ary_ref->[11],
-            "query" => $ary_ref->[12]
+            "datname"         => $row{datname},
+            "pid"             => $row{pid},
+            "application_name"=> $row{application_name},
+            "client_addr"     => $row{client_addr},
+            "client_hostname" => $row{client_addr},
+            "client_port"     => $row{client_hostname},
+            "backend_start"   => $row{backend_start},
+            "xact_start"      => $row{xact_start},
+            "query_start"     => $row{query_start},
+            "state_change"    => $row{state_change},
+            "waiting"         => $row{waiting},
+            "state"           => $row{state},
+            "query"           => $row{query}
         };
         my $q = Query->new($tmp);
-        $queries = {%{$queries},$ary_ref->[1] => $q};
+        $queries = {%{$queries}, $row{pid} => $q};
     }
     $sth->finish;
 
@@ -146,6 +145,5 @@ sub print_query {
         print "query     : ".$queries->{$q}->{query}."\n";
     }
 }
-
 
 1;

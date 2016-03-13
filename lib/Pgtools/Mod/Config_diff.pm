@@ -110,8 +110,9 @@ sub get_db_config {
     $sth->execute();
 
     my $items = {};
-    while (my $ary_ref = $sth->fetchrow_arrayref) {
-        $items = {%{$items}, @$ary_ref[0] => @$ary_ref[1]};
+    while (my $hash_ref = $sth->fetchrow_hashref) {
+        my %row = %$hash_ref;
+        $items = {%{$items}, $row{name} => $row{setting}};
     }
 
     $sth = $db->dbh->prepare("SELECT version()");
