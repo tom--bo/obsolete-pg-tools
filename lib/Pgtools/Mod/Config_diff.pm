@@ -2,7 +2,7 @@ package Config_diff;
 use strict;
 use warnings;
 
-use Mod::Setting;
+use Mod::Connection;
 use Mod::Conf;
 use Data::Dumper;
 use List::MoreUtils qw(uniq);
@@ -20,12 +20,16 @@ sub exec {
     my $db_cnt = @ARGV;
 
     for(my $i=0; $i<$db_cnt; $i++) {
-        my $obj = Setting->new($default);
-        $obj->setArgs($ARGV[$i]);
-        push(@dbs, $obj);
+        my $db = Connection->new($default);
+        $db->setArgs($ARGV[$i]);
+        $db->create_connection();
 
-        my $c = get_db_config($dbs[$i]);
+        my $c = get_db_config($db);
+
+        push(@dbs, $db);
         push(@confs, Conf->new($c));
+
+        $db->dbh->disconnect;
     }
 
     my $is_different = &check_version(\@confs);
@@ -52,7 +56,7 @@ sub check_version {
 
 sub warn_difference {
     print "************************\n";
-    print " Different Version !!\n";
+    print "  Different Version !!  \n";
     print "************************\n";
 }
 
@@ -102,13 +106,7 @@ sub print_difference {
 sub get_db_config {
     my $db = shift @_;
     
-    my $dbh = DBI->connect(
-        "dbi:Pg:dbname=".$db->database.";host=".$db->host.";port=".$db->port,
-        $db->user,
-        $db->password
-    ) or die "$!\n Error: failed to connect to DB.\n";
-
-    my $sth = $dbh->prepare("SELECT name, setting FROM pg_settings");
+    my $sth = $db->dbh->prepare("SELECT name, setting FROM pg_settings");
     $sth->execute();
 
     my $items = {};
@@ -116,14 +114,13 @@ sub get_db_config {
         $items = {%{$items}, @$ary_ref[0] => @$ary_ref[1]};
     }
 
-    $sth = $dbh->prepare("SELECT version()");
+    $sth = $db->dbh->prepare("SELECT version()");
     $sth->execute();
 
     my $ref = $sth->fetchrow_arrayref;
     my @v = split(/ /, @$ref[0], -1);
 
     $sth->finish;
-    $dbh->disconnect;
 
     my $ret = {
         "version" => $v[1],

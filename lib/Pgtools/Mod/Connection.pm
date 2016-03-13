@@ -1,9 +1,10 @@
-package Setting;
+package Connection;
 use strict;
 use warnings;
 
+use Data::Dumper;
 use parent qw(Class::Accessor);
-Setting->mk_accessors(qw(host port user password database));
+Connection->mk_accessors(qw(dbh host port user password database));
 
 sub setArgs {
     my $self = shift;
@@ -18,5 +19,17 @@ sub setArgs {
     $self->set("password", $tmp[3]) if $tmp[3] ne '';
     $self->set("database", $tmp[4]) if $tmp[4] ne '';
 }
+
+sub create_connection {
+    my $self = shift;
+
+    $self->set("dbh", DBI->connect(
+        "dbi:Pg:dbname=".$self->database.";host=".$self->host.";port=".$self->port,
+        $self->user,
+        $self->password
+    )) or die "$!\n Error: failed to connect to DB.\n";
+}
+
+
 
 1;

@@ -12,7 +12,7 @@ use DateTime::Format::Strptime;
 use Perl6::Slurp;
 use JSON::XS;
 use Mod::Config_diff;
-use Mod::Setting;
+use Mod::Connection;
 use Mod::Conf;
 
 our $VERSION = '0.01';

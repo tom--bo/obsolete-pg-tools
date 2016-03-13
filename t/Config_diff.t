@@ -13,17 +13,16 @@ my $s = Config_diff->new({"argv" => \@ARGV});
 ok $s;
 isa_ok($s, "Config_diff");
 
-# ///////////////
-# check_version
-# ///////////////
-
-
 
 # ///////////////
 # get_different_key
 # ///////////////
 
 
+
+# ///////////////
+# get_db_config
+# ///////////////
 
 
 

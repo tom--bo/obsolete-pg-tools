@@ -33,11 +33,6 @@ isa_ok($k, "Kill");
 
 
 
-# ///////////////
-# kill_queries
-# ///////////////
-
-
 
 done_testing;
 

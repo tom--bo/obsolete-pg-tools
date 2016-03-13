@@ -5,7 +5,7 @@ use DateTime;
 use DateTime::Format::Strptime;
 use DBI;
 
-use Mod::Setting;
+use Mod::Connection;
 use Mod::Query;
 use Data::Dumper;
 use parent qw(Class::Accessor);
@@ -27,45 +27,44 @@ sub exec {
         "database" => "postgres"
     };
 
-    my $db = Setting->new($default);
+    my $db = Connection->new($default);
     $db->setArgs(shift @ARGV);
-    
-    my $dbh = DBI->connect("dbi:Pg:dbname=".$db->database.";host=".$db->host.";port=".$db->port,$db->user,$db->password) or die "$!\n Error: failed to connect to DB.\n";
+    $db->create_connection();
 
     # return hash reference
-    my $queries = &search_queries($dbh, $self, $db);
+    my $queries = &search_queries($self, $db);
 
     if($self->print and !$self->kill) {
         &print_query($queries);
     }
     if($self->kill){
-        &kill_queries($dbh, $self, $queries);
+        &kill_queries($db, $self, $queries);
     }
 
-    $dbh->disconnect;
+    $db->dbh->disconnect;
 }
 
 sub kill_queries {
-    my ($dbh, $self, $queries) = @_;
+    my ($db, $self, $queries) = @_;
     my ($sth, $now);
 
     foreach my $pid (keys(%$queries)) {
-        $sth = $dbh->prepare("SELECT pg_terminate_backend(".$pid.");");
+        $sth = $db->dbh->prepare("SELECT pg_terminate_backend(".$pid.");");
         $now = DateTime->now( time_zone => 'local' );
+        $sth->execute();
         if($self->print) {
             print "killed-pid: ".$pid.", at ".$now->strftime('%Y/%m/%d %H:%M:%S')."\n";
             print "query     : ".$queries->{$pid}->{query}."\n";
         }
-        $sth->execute();
     }
 }
 
 sub search_queries {
-    my ($dbh, $self, $db) = @_;
+    my ($self, $db) = @_;
     my @pids;
     my $queries = {};
 
-    my $sth = $dbh->prepare("
+    my $sth = $db->dbh->prepare("
         SELECT
             datname,
             pid,
