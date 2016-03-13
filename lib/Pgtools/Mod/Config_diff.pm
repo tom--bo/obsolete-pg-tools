@@ -9,6 +9,7 @@ use List::MoreUtils qw(uniq);
 use parent qw(Class::Accessor);
 
 sub exec {
+    my $self = shift;
     my $default = {
         "host"     => "localhost",
         "port"     => "5432",
@@ -24,10 +25,15 @@ sub exec {
         $db->setArgs($ARGV[$i]);
         $db->create_connection();
 
-        my $c = get_db_config($db);
+        my $c = get_db_config($self, $db);
+        my $v = get_db_version($self, $db);
+        my $obj = {
+            "version" => $v,
+            "items"   => $c 
+        };
 
         push(@dbs, $db);
-        push(@confs, Conf->new($c));
+        push(@confs, Conf->new($obj));
 
         $db->dbh->disconnect;
     }
@@ -104,7 +110,7 @@ sub print_difference {
 }
 
 sub get_db_config {
-    my $db = shift @_;
+    my ($self, $db) = @_;
     
     my $sth = $db->dbh->prepare("SELECT name, setting FROM pg_settings");
     $sth->execute();
@@ -114,23 +120,23 @@ sub get_db_config {
         my %row = %$hash_ref;
         $items = {%{$items}, $row{name} => $row{setting}};
     }
+    $sth->finish;
 
-    $sth = $db->dbh->prepare("SELECT version()");
+    return $items;
+}
+
+sub get_db_version {
+    my ($self, $db) = @_;
+    
+    my $sth = $db->dbh->prepare("SELECT version()");
     $sth->execute();
 
     my $ref = $sth->fetchrow_arrayref;
     my @v = split(/ /, @$ref[0], -1);
-
     $sth->finish;
 
-    my $ret = {
-        "version" => $v[1],
-        "items"    => $items 
-    };
-
-    return $ret;
+    return $v[1];
 }
-
 
 
 1;
