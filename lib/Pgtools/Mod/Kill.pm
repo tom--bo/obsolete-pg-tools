@@ -68,15 +68,7 @@ sub search_queries {
         SELECT
             datname,
             pid,
-            application_name,
-            client_addr,
-            client_hostname,
-            client_port,
             backend_start,
-            xact_start,
-            query_start,
-            state_change,
-            waiting,
             state,
             query
         FROM 
@@ -115,15 +107,7 @@ sub search_queries {
         my $tmp = {
             "datname"         => $row{datname},
             "pid"             => $row{pid},
-            "application_name"=> $row{application_name},
-            "client_addr"     => $row{client_addr},
-            "client_hostname" => $row{client_addr},
-            "client_port"     => $row{client_hostname},
             "backend_start"   => $row{backend_start},
-            "xact_start"      => $row{xact_start},
-            "query_start"     => $row{query_start},
-            "state_change"    => $row{state_change},
-            "waiting"         => $row{waiting},
             "state"           => $row{state},
             "query"           => $row{query}
         };

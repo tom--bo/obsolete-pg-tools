@@ -1,28 +1,5 @@
 # carton snapshot format: version 1.0
 DISTRIBUTIONS
-  CPAN-Meta-2.150005
-    pathname: D/DA/DAGOLDEN/CPAN-Meta-2.150005.tar.gz
-    provides:
-      CPAN::Meta 2.150005
-      CPAN::Meta::Converter 2.150005
-      CPAN::Meta::Feature 2.150005
-      CPAN::Meta::History 2.150005
-      CPAN::Meta::Merge 2.150005
-      CPAN::Meta::Prereqs 2.150005
-      CPAN::Meta::Spec 2.150005
-      CPAN::Meta::Validator 2.150005
-    requirements:
-      CPAN::Meta::Requirements 2.121
-      CPAN::Meta::YAML 0.008
-      Carp 0
-      ExtUtils::MakeMaker 6.17
-      JSON::PP 2.27200
-      Parse::CPAN::Meta 1.4414
-      Scalar::Util 0
-      perl 5.008
-      strict 0
-      version 0.88
-      warnings 0
   Class-Singleton-1.5
     pathname: S/SH/SHAY/Class-Singleton-1.5.tar.gz
     provides:
@@ -1189,6 +1166,22 @@ DISTRIBUTIONS
       Perl6::Slurp 0.051005
     requirements:
       ExtUtils::MakeMaker 0
+  Test-MockObject-1.20150527
+    pathname: C/CH/CHROMATIC/Test-MockObject-1.20150527.tar.gz
+    provides:
+      Test::MockObject 1.20150527
+      Test::MockObject::Extends 1.20150527
+    requirements:
+      Carp 0
+      Devel::Peek 0
+      ExtUtils::MakeMaker 0
+      Scalar::Util 0
+      Test::Builder 0
+      UNIVERSAL::can 1.20110617
+      UNIVERSAL::isa 1.20110614
+      constant 0
+      strict 0
+      warnings 0
   Try-Tiny-0.22
     pathname: D/DO/DOY/Try-Tiny-0.22.tar.gz
     provides:
@@ -1210,6 +1203,28 @@ DISTRIBUTIONS
     requirements:
       ExtUtils::MakeMaker 0
       common::sense 0
+  UNIVERSAL-can-1.20140328
+    pathname: C/CH/CHROMATIC/UNIVERSAL-can-1.20140328.tar.gz
+    provides:
+      UNIVERSAL::can 1.20140328
+    requirements:
+      ExtUtils::MakeMaker 6.30
+      Scalar::Util 0
+      strict 0
+      vars 0
+      warnings 0
+      warnings::register 0
+  UNIVERSAL-isa-1.20150614
+    pathname: E/ET/ETHER/UNIVERSAL-isa-1.20150614.tar.gz
+    provides:
+      UNIVERSAL::isa 1.20150614
+    requirements:
+      ExtUtils::MakeMaker 0
+      Scalar::Util 0
+      perl 5.006002
+      strict 0
+      warnings 0
+      warnings::register 0
   common-sense-3.74
     pathname: M/ML/MLEHMANN/common-sense-3.74.tar.gz
     provides:

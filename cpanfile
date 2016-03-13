@@ -5,6 +5,8 @@ requires 'DateTime';
 requires 'DateTime::Format::Strptime';
 requires 'Perl6::Slurp';
 requires 'JSON::XS';
+requires 'Test::More';
+requires 'Test::MockObject';
 
 # requires 'SQL::Maker';
 # requires 'String::ShellQuote';
