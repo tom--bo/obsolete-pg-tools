@@ -43,17 +43,18 @@ $s->exec();
 
 sub print_help {
     print <<OUT;
-    $0 [-hv] arg1 arg2
+    $0 [-hv] arg1 arg2 [args ...]
 
     Show different settings between 2 PostgreSQL databases.
 
     Options:
-      -help:  show this help.
+      -help: show this help.
+      -help: show Pg-tools version.
 
     Args:
-      This command need 2 argument which is string to specify the databases.
+      This command needs more than 2 argument which is string to specify the PostgreSQL databases.
       1 argument should contain hostname, port, username, password, and database.
-      These should be separated by  colon(:). 
+      These should be separated by commas. 
       You can omit these pieces except hostname, and then you should insert no character between colons.
       Default setting is applied when you omit argument pieces. 
       Default setting is ...
@@ -72,21 +73,38 @@ __END__
 
 =head1 NAME
 
-Pgtools::pg_config_diff - compare postgresql servers setting. 
+Pgtools::pg_config_diff - compare plural PostgreSQL settings. 
 
 =head1 VERSION
 
-Version 0.01
+Version 0.0.1
 
 
 =head1 SYNOPSIS
 
-Compare postgresql settings.
+    Show different settings between 2 PostgreSQL databases.
 
-Perhaps a little code snippet.
+      This command needs more than 2 argument which is string to specify the PostgreSQL databases.
+      1 argument should contain hostname, port, username, password, and database.
+      These should be separated by commas. 
+      You can omit these pieces except hostname, and then you should insert no character between colons.
+      Default setting is applied when you omit argument pieces. 
+      Default setting is ...
+        Hostname: localhost 
+        Port    : 5432
+        Username: postgres
+        Password: '' (empty)
+        Database: postgres
 
-    ...
-    ...
+    (Example)
+    $pg_config_diff  "192.168.33.21,5432,postgres,," "192.168.33.22,5432,postgres,," "sample.db.host,5432,postgres,,"
+
+    <Setting Name>       192.168.33.21           192.168.33.22           sample.db.host
+    --------------------------------------------------------------------------------------------
+    max_connections      50                      100                     100
+    shared_buffers       32768                   16384                   16384
+    tcp_keepalives_idle  3                       7200                    7200
+    wal_buffers          1024                    512                     512
 
 =head1 AUTHOR
 
@@ -104,7 +122,6 @@ automatically be notified of progress on your bug as I make changes.
 You can find documentation for this module with the perldoc command.
 
     perldoc Pgtools::pg_config_diff
-
 
 You can also look for information at:
 
@@ -134,43 +151,9 @@ L<http://search.cpan.org/dist/.//>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2015 Tomoaki Otsuka.
+Copyright 2016 Tomoaki Otsuka.
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of the the Artistic License (2.0). You may obtain a
-copy of the full license at:
-
-L<http://www.perlfoundation.org/artistic_license_2_0>
-
-Any use, modification, and distribution of the Standard or Modified
-Versions is governed by this Artistic License. By using, modifying or
-distributing the Package, you accept this license. Do not use, modify,
-or distribute the Package, if you do not accept this license.
-
-If your Modified Version has been derived from a Modified Version made
-by someone other than you, you are nevertheless required to ensure that
-your Modified Version complies with the requirements of this license.
-
-This license does not grant you the right to use any trademark, service
-mark, tradename, or logo of the Copyright Holder.
-
-This license includes the non-exclusive, worldwide, free-of-charge
-patent license to make, have made, use, offer to sell, sell, import and
-otherwise transfer the Package with respect to any patent claims
-licensable by the Copyright Holder that are necessarily infringed by the
-Package. If you institute patent litigation (including a cross-claim or
-counterclaim) against any party alleging that the Package constitutes
-direct or contributory patent infringement, then this Artistic License
-to you shall terminate on the date that such litigation is filed.
-
-Disclaimer of Warranty: THE PACKAGE IS PROVIDED BY THE COPYRIGHT HOLDER
-AND CONTRIBUTORS "AS IS' AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES.
-THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-PURPOSE, OR NON-INFRINGEMENT ARE DISCLAIMED TO THE EXTENT PERMITTED BY
-YOUR LOCAL LAW. UNLESS REQUIRED BY LAW, NO COPYRIGHT HOLDER OR
-CONTRIBUTOR WILL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR
-CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE USE OF THE PACKAGE,
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+This program is free software;
 
 
 =cut
