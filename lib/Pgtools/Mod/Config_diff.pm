@@ -88,8 +88,9 @@ sub get_different_keys {
 
         $tmp_item = @$confs[0]->items->{$key};
         for(my $i=1; $i<$db_cnt; $i++) {
-            if($tmp_item ne @$confs[1]->items->{$key}) {
+            if($tmp_item ne @$confs[$i]->items->{$key}) {
                 push(@diff_keys, $key);
+                last;
             }
         }
     }
