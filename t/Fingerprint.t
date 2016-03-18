@@ -18,23 +18,17 @@ ok $s;
 isa_ok($s, "Fingerprint");
 
 # ///////////////
-# normalize_spaces
-# ///////////////
-
-is($s->normalize_spaces("SELECT * FROM user WHERE id   =     ?;"), "SELECT * FROM user WHERE id = ?;");
-is($s->normalize_spaces("SELECT * FROM user WHERE id   =   ?  ;"), "SELECT * FROM user WHERE id = ?;");
-
-
-# ///////////////
 # symbolize_query
 # ///////////////
 
 is($s->symbolize_query("SELECT * FROM user WHERE id = 100;"), "SELECT * FROM user WHERE id = ?;");
-is($s->symbolize_query("SELECT * FROM user WHERE id   =     100 LIMIT 3;"), "SELECT * FROM user WHERE id = ? LIMIT ?;");
-is($s->symbolize_query("SELECT * FROM user2 WHERE id =100;"), "SELECT * FROM user2 WHERE id = ?;");
-is($s->symbolize_query("SELECT * FROM user WHERE name ='hoge';"), "SELECT * FROM user WHERE name = ?;");
-is($s->symbolize_query('SELECT * FROM user WHERE name like "bar%";'), "SELECT * FROM user WHERE name like ?;");
-is($s->symbolize_query('SELECT * FROM user WHERE name like "bar%" and address like "foo";'), "SELECT * FROM user WHERE name like ?;");
+is($s->symbolize_query("SELECT * FROM user2 WHERE id = 100 LIMIT 3;"), "SELECT * FROM user2 WHERE id = ? LIMIT ?;");
+is($s->symbolize_query("SELECT * FROM user2 WHERE point =10.25;"), "SELECT * FROM user2 WHERE point =?;");
+is($s->symbolize_query("SELECT * FROM user2 WHERE point = +10.25;"), "SELECT * FROM user2 WHERE point = ?;");
+is($s->symbolize_query("SELECT * FROM user2 WHERE point =-10.25;"), "SELECT * FROM user2 WHERE point =?;");
+is($s->symbolize_query("SELECT * FROM user2 WHERE expression IS TRUE;"), "SELECT * FROM expression IS ?;");
+is($s->symbolize_query("SELECT * FROM user2 WHERE expression IS true;"), "SELECT * FROM expression IS ?;");
+is($s->symbolize_query("SELECT * FROM user2 WHERE expression IS FALSE;"), "SELECT * FROM expression IS ?;");
 
 }
 

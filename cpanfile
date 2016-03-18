@@ -7,7 +7,6 @@ requires 'Perl6::Slurp';
 requires 'JSON::XS';
 requires 'Test::More';
 requires 'Test::MockObject';
+requires 'File::Spec';
 
-# requires 'SQL::Maker';
-# requires 'String::ShellQuote';
 
