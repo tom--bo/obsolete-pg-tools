@@ -1,0 +1,137 @@
+#!/usr/bin/env perl
+package Pgtools::pg_finger_print;
+
+use 5.021;
+use strict;
+use warnings;
+use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
+use Mod::Fingerprint;
+
+our $VERSION = '0.0.1';
+$| = 1;
+
+my $help = 0;
+my $version = 0;
+my $query = "";
+GetOptions(
+    'help|h'    => \$help,
+    'version|v' => \$version,
+    'query|q=s' => \$query,
+);
+
+if($help){
+    &print_help;
+    exit;
+}
+if($version){
+    print "Version: ".$VERSION."\n";
+    exit;
+}
+
+if ((@ARGV < 1 && $query eq "") || (@ARGV > 1 && $query ne "")) {  
+    die "Insufficient arguments.\nPlease check pg_fingerprint -help\n";
+}
+my $filename = shift @ARGV;
+
+my $s = Fingerprint->new();
+$s->exec($query, $filename);
+
+sub print_help {
+    print <<OUT;
+    $0 [-hv] (-query arg1 | file_name)
+
+    Explanation...
+
+    Options:
+      -help: show this help.
+      -help: show Pg-tools version.
+
+    Args:
+
+      Explanation...
+      ...
+      ...
+
+
+OUT
+}
+
+
+__END__
+
+
+
+=head1 NAME
+
+Pgtools::pg_config_diff - compare plural PostgreSQL settings. 
+
+=head1 VERSION
+
+Version 0.0.1
+
+
+=head1 SYNOPSIS
+
+    Explanation...
+    ...
+    ...
+
+
+    (Example)
+    $pg_fingerprint "SELECT * FROM users WHERE id = 100;
+
+    SELECT * FROM users WHERE id = ?;
+
+=head1 AUTHOR
+
+Tomoaki Otsuka, C<< <otsuka.tt at gmail.com> >>
+
+=head1 BUGS
+
+Please report any bugs or feature requests to C<bug-./ at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=./>.  I will be notified, and then you'll
+automatically be notified of progress on your bug as I make changes.
+
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc Pgtools::pg_fingerprint
+
+You can also look for information at:
+
+=over 4
+
+=item * RT: CPAN's request tracker (report bugs here)
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=./>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/./>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/./>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/.//>
+
+=back
+
+
+=head1 ACKNOWLEDGEMENTS
+
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2016 Tomoaki Otsuka.
+
+This program is free software;
+
+
+=cut
+
+1
