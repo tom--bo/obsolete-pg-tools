@@ -26,8 +26,8 @@ is($s->symbolize_query("SELECT * FROM user2 WHERE id = 100 LIMIT 3;"), "SELECT *
 is($s->symbolize_query("SELECT * FROM user2 WHERE point =10.25;"), "SELECT * FROM user2 WHERE point =?;");
 is($s->symbolize_query("SELECT * FROM user2 WHERE point = +10.25;"), "SELECT * FROM user2 WHERE point = ?;");
 is($s->symbolize_query("SELECT * FROM user2 WHERE point =-10.25;"), "SELECT * FROM user2 WHERE point =?;");
-is($s->symbolize_query("SELECT * FROM user2 WHERE expression IS TRUE;"), "SELECT * FROM expression IS ?;");
-is($s->symbolize_query("SELECT * FROM user2 WHERE expression IS true;"), "SELECT * FROM expression IS ?;");
+is($s->symbolize_query("SELECT * FROM user2 WHERE expression IS TRUE;"), "SELECT * FROM user2 WHERE expression IS ?;");
+is($s->symbolize_query("SELECT * FROM user2 WHERE expression IS true;"), "SELECT * FROM user2 WHERE expression IS ?;");
 is($s->symbolize_query("SELECT * FROM user2 WHERE expression IS FALSE;"), "SELECT * FROM expression IS ?;");
 
 }
