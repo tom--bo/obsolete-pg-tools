@@ -4,6 +4,6 @@ use warnings;
 
 use parent qw(Class::Accessor);
 use Data::Dumper;
-Query->mk_accessors(qw(datname application_name client_addr client_hostname client_port backend_start xact_start query_start state_change waiting state query));
+Query->mk_accessors(qw(datname xact_start query_start state query));
 
 1;

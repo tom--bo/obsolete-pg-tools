@@ -40,6 +40,7 @@ sub exec {
     if($self->kill){
         &kill_queries($db, $self, $queries);
     }
+    print "Killed matched queries!\n";
 
     $db->dbh->disconnect;
 }
@@ -53,8 +54,10 @@ sub kill_queries {
         $now = DateTime->now( time_zone => 'local' );
         $sth->execute();
         if($self->print) {
-            print "killed-pid: ".$pid.", at ".$now->strftime('%Y/%m/%d %H:%M:%S')."\n";
-            print "query     : ".$queries->{$pid}->{query}."\n";
+            print "-------------------------------\n";
+            print "Killed-pid: ".$pid."\n";
+            print "At        : ".$now->strftime('%Y/%m/%d %H:%M:%S')."\n";
+            print "Query     : ".$queries->{$pid}->{query}."\n";
         }
     }
 }
@@ -68,7 +71,7 @@ sub search_queries {
         SELECT
             datname,
             pid,
-            backend_start,
+            query_start,
             state,
             query
         FROM 
@@ -96,7 +99,7 @@ sub search_queries {
             next;
         }
         if($self->run_time != 0) {
-            $qt = $qt_format->parse_datetime($row{backend_start});
+            $qt = $qt_format->parse_datetime($row{query_start});
             $qt->set_time_zone('Asia/Tokyo');
             my $diff = $start_time->epoch() - $qt->epoch();
             if($diff < $self->run_time) {
@@ -107,7 +110,7 @@ sub search_queries {
         my $tmp = {
             "datname"         => $row{datname},
             "pid"             => $row{pid},
-            "backend_start"   => $row{backend_start},
+            "query_start"   => $row{query_start},
             "state"           => $row{state},
             "query"           => $row{query}
         };

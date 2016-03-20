@@ -101,7 +101,7 @@ sub print_difference {
     my ($confs, $dbs, $diff_keys) = @_;
     my $db_cnt = scalar(@$confs);
     my $key_cnt = scalar(@$diff_keys);
-    printf("<Setting Name>       ");
+    printf("<Setting Name>           ");
     for(my $j=0; $j<$db_cnt; $j++) {
         printf("%-24s", @$dbs[$j]->host);
     }
@@ -112,7 +112,7 @@ sub print_difference {
     printf("\n");
     for(my $i=0; $i<$key_cnt; $i++) {
         my $key = @$diff_keys[$i];
-        printf("%-20s ", $key);
+        printf("%-24s ", $key);
         for(my $j=0; $j<$db_cnt; $j++) {
             printf("%-23s ", @$confs[$j]->items->{$key});
         }
