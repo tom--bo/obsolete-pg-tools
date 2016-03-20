@@ -64,7 +64,8 @@ sub print_help {
     print <<OUT;
     $0 -help | [-(options below)]
 
-    Kill queries which are matched specified regular expression.
+    pg_kill shows the specified queries during execution by regular expression and the other options.
+    And also kill these specifid queries by -kill option.
 
   Options:
     -db  database:       set the database name
@@ -82,6 +83,35 @@ sub print_help {
     -r   run_time:       execute time 
     -u   user:           Postgres user name 
     -v   version:        version
+
+    (Example)
+
+    Print option just shows matched query.
+
+    $ pg_kill -print -mq '.*' "192.168.32.12,5432,postgres,,dvdrental"
+    -------------------------------
+    pid       : 11493
+    start_time: 2016-03-20 16:11:17.57228+00
+    state     : idle
+    query     : SELECT * FROM actor WHERE last_name like '%a%';
+    -------------------------------
+    pid       : 11492
+    start_time: 2016-03-20 16:08:07.762289+00
+    state     : idle
+    query     : select * from actor where actor_id < 200;
+
+
+    You can kill the matched query with -kill option.
+    Be careful to kill queries!!
+    Please test on your environments. And exec this in your responsibility.
+
+    $ pg_kill -kill -print -mq "like\s'\%.*\%'" "192.168.32.12,5432,postgres,,dvdrental"
+    -------------------------------
+    Killed-pid: 11590
+    At        : 2016/03/21 01:32:29
+    Query     : SELECT * FROM actor WHERE last_name like '%a%';
+    Killed matched queries!
+
 OUT
 }
 
@@ -95,14 +125,8 @@ Pgtools::pg_kill - kill the postgresql processes with option
 
 =head1 SYNOPSIS
 
-    Kill PostgreSQL queries accurately with some options.
-
-Perhaps a little code snippet.
-
-    ...
-    ...
-
-    Kill queries which are matched specified regular expression and the other options.
+    pg_kill shows the specified queries during execution by regular expression and the other options.
+    And also kill these specifid queries by -kill option.
 
   Options:
     -db  database:       set the database name
@@ -121,6 +145,34 @@ Perhaps a little code snippet.
     -u   user:           Postgres user name 
     -v   version:        version
 
+    (Example)
+
+    Print option just shows matched query.
+
+    $ pg_kill -print -mq '.*' "192.168.32.12,5432,postgres,,dvdrental"
+    -------------------------------
+    pid       : 11493
+    start_time: 2016-03-20 16:11:17.57228+00
+    state     : idle
+    query     : SELECT * FROM actor WHERE last_name like '%a%';
+    -------------------------------
+    pid       : 11492
+    start_time: 2016-03-20 16:08:07.762289+00
+    state     : idle
+    query     : select * from actor where actor_id < 200;
+
+
+    You can kill the matched query with -kill option.
+    Be careful to kill queries!!
+    Please test on your environments. And exec this in your responsibility.
+
+    $ pg_kill -kill -print -mq "like\s'\%.*\%'" "192.168.32.12,5432,postgres,,dvdrental"
+    -------------------------------
+    Killed-pid: 11590
+    At        : 2016/03/21 01:32:29
+    Query     : SELECT * FROM actor WHERE last_name like '%a%';
+    Killed matched queries!
+
 
 =head1 AUTHOR
 
@@ -128,19 +180,13 @@ Tomoaki Otsuka, C<< <otsuka.tt at gmail.com> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-./ at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=./>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
+Please report any bugs or feature requests to the Github page.
 
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
 
     perldoc Pgtools::pg_kill
-
-
-You can also look for information at:
 
 =over 4
 

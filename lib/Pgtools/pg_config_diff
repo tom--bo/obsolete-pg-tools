@@ -45,11 +45,11 @@ sub print_help {
     print <<OUT;
     $0 [-hv] arg1 arg2 [args ...]
 
-    Show different settings between 2 PostgreSQL databases.
+    Show different settings between plural PostgreSQL databases.
 
     Options:
       -help: show this help.
-      -help: show Pg-tools version.
+      -version: show Pg-tools version.
 
     Args:
       This command needs more than 2 argument which is string to specify the PostgreSQL databases.
@@ -63,13 +63,23 @@ sub print_help {
         Username: postgres
         Password: '' (empty)
         Database: postgres
+
+    (Example)
+
+    $ pg_config_diff  "192.168.33.21,5432,postgres,," "192.168.33.22,,,," "192.168.33.23,5432,postgres,,dvdrental"
+    <Setting Name>           192.168.33.21           192.168.33.22           192.168.33.23
+    --------------------------------------------------------------------------------------------
+    max_connections          50                      100                     100
+    shared_buffers           32768                   16384                   65536
+    tcp_keepalives_idle      8000                    7200                    10000
+    tcp_keepalives_interval  75                      75                      10
+    wal_buffers              1024                    512                     2048
+
 OUT
+
 }
 
-
 __END__
-
-
 
 =head1 NAME
 
@@ -97,14 +107,16 @@ Version 0.0.1
         Database: postgres
 
     (Example)
-    $pg_config_diff  "192.168.33.21,5432,postgres,," "192.168.33.22,5432,postgres,," "sample.db.host,5432,postgres,,"
 
-    <Setting Name>       192.168.33.21           192.168.33.22           sample.db.host
+    $ pg_config_diff  "192.168.33.21,5432,postgres,," "192.168.33.22,,,," "192.168.33.23,5432,postgres,,dvdrental"
+    <Setting Name>           192.168.33.21           192.168.33.22           192.168.33.23
     --------------------------------------------------------------------------------------------
-    max_connections      50                      100                     100
-    shared_buffers       32768                   16384                   16384
-    tcp_keepalives_idle  3                       7200                    7200
-    wal_buffers          1024                    512                     512
+    max_connections          50                      100                     100
+    shared_buffers           32768                   16384                   65536
+    tcp_keepalives_idle      8000                    7200                    10000
+    tcp_keepalives_interval  75                      75                      10
+    wal_buffers              1024                    512                     2048
+
 
 =head1 AUTHOR
 
@@ -112,18 +124,13 @@ Tomoaki Otsuka, C<< <otsuka.tt at gmail.com> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-./ at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=./>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
+Please report any bugs or feature requests to the Github page.
 
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
 
     perldoc Pgtools::pg_config_diff
-
-You can also look for information at:
 
 =over 4
 

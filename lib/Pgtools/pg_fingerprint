@@ -40,18 +40,18 @@ sub print_help {
     print <<OUT;
     $0 [-hv] (-query arg1 | file_name)
 
-    Explanation...
+    This command converts the values into a placeholders.
 
     Options:
       -help: show this help.
-      -help: show Pg-tools version.
+      -version: show Pg-tools version.
+      -query: spefy a query with command-line.
 
-    Args:
-
-      Explanation...
-      ...
-      ...
-
+    $ pg_fingerprint queries_file
+    SELECT * FROM user WHERE id = ?;
+    SELECT * FROM user2 WHERE id = ? LIMIT ?;
+    SELECT * FROM user2 WHERE point = ?;
+    SELECT * FROM user2 WHERE expression IS ?;
 
 OUT
 }
@@ -72,15 +72,18 @@ Version 0.0.1
 
 =head1 SYNOPSIS
 
-    Explanation...
-    ...
-    ...
-
+    This command converts the values into a placeholders.
 
     (Example)
-    $pg_fingerprint "SELECT * FROM users WHERE id = 100;
+    $ pg_fingerprint -query "SELECT * FROM users WHERE id < 10;"
+    SELECT * FROM users WHERE id < ?;
 
-    SELECT * FROM users WHERE id = ?;
+    $ pg_fingerprint queries_file
+    SELECT * FROM user WHERE id = ?;
+    SELECT * FROM user2 WHERE id = ? LIMIT ?;
+    SELECT * FROM user2 WHERE point = ?;
+    SELECT * FROM user2 WHERE expression IS ?;
+
 
 =head1 AUTHOR
 
@@ -88,18 +91,13 @@ Tomoaki Otsuka, C<< <otsuka.tt at gmail.com> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-./ at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=./>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
+Please report any bugs or feature requests to the Github page.
 
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
 
     perldoc Pgtools::pg_fingerprint
-
-You can also look for information at:
 
 =over 4
 
