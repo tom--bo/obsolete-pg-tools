@@ -4,7 +4,6 @@ package Pgtools::pg_kill;
 use 5.021;
 use strict;
 use warnings;
-use Data::Dumper;
 use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
 use Perl6::Slurp;
 use JSON::XS;

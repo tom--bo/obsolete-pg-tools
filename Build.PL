@@ -1,4 +1,4 @@
-use 5.006;
+use 5.021;
 use strict;
 use warnings;
 use Module::Build;
@@ -24,6 +24,7 @@ my $builder = Module::Build->new(
         'Perl6::Slurp' => 0,
         'JSON::XS' => 0,
         'List::MoreUtils' => 0,
+        'File::Spec' => 0,
     },
     add_to_cleanup     => [ './-*' ],
     create_makefile_pl => 'traditional',

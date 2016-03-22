@@ -2,7 +2,6 @@ package Connection;
 use strict;
 use warnings;
 
-use Data::Dumper;
 use parent qw(Class::Accessor);
 Connection->mk_accessors(qw(dbh host port user password database));
 

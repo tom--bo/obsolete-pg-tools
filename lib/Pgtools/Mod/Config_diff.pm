@@ -4,7 +4,6 @@ use warnings;
 
 use Mod::Connection;
 use Mod::Conf;
-use Data::Dumper;
 use List::MoreUtils qw(uniq);
 use parent qw(Class::Accessor);
 
