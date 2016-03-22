@@ -41,8 +41,8 @@ my $s = Config_diff->new();
 $s->exec();
 
 sub print_help {
-    print <<OUT;
-    $0 [-hv] arg1 arg2 [args ...]
+    print <<'OUT';
+    pg_config_diff [-hv] arg1 arg2 [args ...]
 
     Show different settings between plural PostgreSQL databases.
 

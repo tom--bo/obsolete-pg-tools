@@ -60,8 +60,8 @@ $s->exec();
 
 
 sub print_help {
-    print <<OUT;
-    $0 -help | [-(options below)]
+    print <<'OUT';
+    pg_kill -help | [-(options below)]
 
     pg_kill shows the specified queries during execution by regular expression and the other options.
     And also kill these specifid queries by -kill option.
